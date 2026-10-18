@@ -115,6 +115,7 @@ PLAY_MUSIC_FILE = "05. In The House.mp3"   # nhạc nền khi đang chơi
 # Đặt 2 file này cùng thư mục với app.py. Thiếu file thì game tự dùng âm thanh tổng hợp như cũ.
 # Tiếng bước chân: file "tiengchan.mp3" (đặt cùng thư mục với app.py). Game cắt từng bước chân theo bảng STEP_CLIPS
 # [giây bắt đầu, độ to] rồi phát lần lượt; chạy thì phát nhanh hơn + cao hơn một chút. Thiếu file -> dùng tiếng tổng hợp cũ.
+CATCH_FILE = "faaahhhh.mp3"     # tiếng khi ma bắt được người chơi (đặt cùng thư mục với app.py; thiếu file -> dùng tiếng gào tổng hợp)
 GHOST_FILE = "tiengma.mp3"      # tiếng ma: phát khi ma xuất hiện (đặt cùng thư mục với app.py; thiếu file -> dùng tiếng tổng hợp)
 STEP_FILE = "tiengchan.mp3"
 STEP_CLIPS = [[0.357, 0.126], [1.009, 0.144], [1.609, 0.085], [2.236, 0.152], [2.852, 0.159], [3.477, 0.216], [4.102, 0.09], [4.775, 0.137], [5.373, 0.078], [6.027, 0.132], [6.624, 0.088], [7.266, 0.21], [7.871, 0.219], [8.504, 0.177], [9.101, 0.236], [9.732, 0.196], [10.365, 0.212], [11.021, 0.115], [11.64, 0.086], [12.267, 0.153], [12.883, 0.157], [13.508, 0.215], [14.133, 0.089], [14.806, 0.137], [15.404, 0.078], [16.058, 0.132], [16.655, 0.142], [17.322, 0.126], [17.959, 0.136], [18.628, 0.115], [19.278, 0.116], [19.922, 0.21], [20.53, 0.253], [21.179, 0.152], [21.823, 0.087], [22.482, 0.154], [23.096, 0.083], [23.784, 0.121], [25.072, 0.092], [25.708, 0.107], [26.407, 0.112]]
@@ -1152,8 +1153,18 @@ function ambience(){
     const wg=a.createGain();wg.gain.value=.022;s.connect(bp);bp.connect(wg);wg.connect(a.destination);s.start();
     const od=a.createOscillator(),dl=a.createBiquadFilter();droneG=a.createGain();droneG.gain.value=0;od.type='sawtooth';od.frequency.value=62;
     dl.type='lowpass';dl.frequency.value=260;od.connect(dl);dl.connect(droneG);droneG.connect(a.destination);od.start();
-    stormAudioLoad(a); stepAudioLoad(a); ghostAudioLoad(a);
+    stormAudioLoad(a); stepAudioLoad(a); ghostAudioLoad(a); catchAudioLoad(a);
   }catch(e){}
+}
+// ---------- Tiếng khi ma bắt được (faaahhhh.mp3, ~1,7 giây; file rất to nên giảm còn CATCH_VOL) ----------
+const CATCH_SRC="__CATCH__", CATCH_VOL=.6;
+let catchBuf=null, catchLoading=false;
+function catchAudioLoad(a){ if(!CATCH_SRC||catchBuf||catchLoading) return; catchLoading=true; decodeBuf(a,CATCH_SRC).then(b=>{catchBuf=b;}).catch(()=>{}); }
+function catchSound(){
+  if(!catchBuf) return false;
+  try{ const a=ac(); if(a.state==='suspended'&&a.resume) a.resume();
+    const g=a.createGain(), s=a.createBufferSource(); s.buffer=catchBuf; g.gain.value=CATCH_VOL;
+    s.connect(g).connect(a.destination); s.start(); return true; }catch(e){ return false; }
 }
 // ---------- Tiếng ma (tiengma.mp3): phát 1 lần ~6 giây lúc ma xuất hiện, vào nhỏ dần rồi tắt ----------
 const GHOST_SRC="__GHOST__", GH_DUR=6.2, GH_VOL=.8;
@@ -1571,7 +1582,8 @@ function caught(){
   const dx=gh.x-camera.position.x, dz=gh.z-camera.position.z, d=Math.hypot(dx,dz)||1;
   gh.ux=dx/d; gh.uz=dz/d; scareYaw=Math.atan2(-gh.ux,-gh.uz); gh.alpha=1;
   $('scare').style.display='block'; $('banner').style.opacity=0; $('prompt').style.display='none';
-  scream(); shake=.5;
+  ghostSoundStop(); if(!catchSound()) scream();   // có file -> phát tiếng của bạn, thiếu file -> tiếng gào tổng hợp cũ
+  shake=.5;
 }
 function updGhost(dt){
   const P=gh.phase;
@@ -1961,6 +1973,7 @@ _html = (GAME_HTML.replace("__DATA__", build_data())
          .replace("__MENUBG__", MENU_BG)
          .replace("__MUSIC__", load_mp3(MUSIC_FILE, PLAY_MUSIC_FILE, True))
          .replace("__MUSIC2__", load_mp3(PLAY_MUSIC_FILE))
+         .replace("__CATCH__", load_mp3(CATCH_FILE))
          .replace("__GHOST__", load_mp3(GHOST_FILE))
          .replace("__STEP__", load_mp3(STEP_FILE))
          .replace("__SCLIPS__", json.dumps(STEP_CLIPS))
