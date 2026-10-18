@@ -230,6 +230,7 @@ GAME_HTML = r"""
   #mbg{position:absolute;inset:0;display:none;overflow:hidden;background:#000}
   #mimg{position:absolute;inset:-2%;background:#000 url(__MENUBG__) center/cover no-repeat;animation:mzoom 40s ease-in-out infinite alternate}
   @keyframes mzoom{from{transform:scale(1) translateX(-.6%)}to{transform:scale(1.07) translateX(.6%)}}
+  #msky{position:absolute;left:0;right:0;top:0;height:58%;background:linear-gradient(#010103 0%,rgba(1,1,4,.96) 45%,rgba(2,3,8,.7) 75%,rgba(0,0,0,0) 100%)}   /* bầu trời đen, chỉ lộ ra khi sét */
   #mfx{position:absolute;inset:0;width:100%;height:100%}
   #mfl{position:absolute;inset:0;opacity:0;background:radial-gradient(ellipse at 45% 30%,rgba(200,220,255,.9),rgba(120,150,220,.35) 60%,rgba(60,80,140,.1))}
   #menu{background:radial-gradient(ellipse at center,rgba(0,0,0,.22) 0%,rgba(0,0,0,.05) 50%,rgba(0,0,0,.3) 100%)}   /* menu trong suốt để thấy khu rừng phía sau */
@@ -318,7 +319,7 @@ GAME_HTML = r"""
 </style>
 </head>
 <body>
-<div id="stage"><div id="c"></div><div id="mbg"><div id="mimg"></div><canvas id="mfx"></canvas><div id="mfl"></div></div><div id="ui">
+<div id="stage"><div id="c"></div><div id="mbg"><div id="mimg"></div><div id="msky"></div><canvas id="mfx"></canvas><div id="mfl"></div></div><div id="ui">
 <div id="vig"></div><canvas id="grain"></canvas><div id="lowhp"></div>
 <div id="cross"></div>
 <div id="hud"><div id="dn"></div><div id="hp"></div><div id="hn"></div><div id="ks"></div><div id="ot"></div></div>
@@ -676,7 +677,7 @@ function thunder(near){
 function stormUpdate(dt){
   nextBolt-=dt;
   if(nextBolt<=0){
-    nextBolt=6+Math.random()*10; boltT=1; boltX=20+Math.random()*216;
+    nextBolt=state==='menu'?3.5+Math.random()*5.5:6+Math.random()*10; boltT=1; boltX=20+Math.random()*216;
     boltPts=[[boltX,0]]; let bx=boltX,by=0;
     while(by<130){bx+=(Math.random()-.5)*28; by+=10+Math.random()*14; boltPts.push([bx,by]);}
     const near=Math.random()<.6, dly=near?.06+Math.random()*.1:1.0+Math.random()*1.6;   // gần: nổ gần như cùng lúc chớp; xa: trễ 1-2,6 giây
@@ -1166,7 +1167,7 @@ function rainStart(a){
   });
 }
 function rainUpdate(){                // gọi mỗi khung hình: mưa chỉ nghe khi đang chơi, nhỏ lại khi ma xuất hiện
-  const want=(state==='play'||state==='scare'), tgt=want?(gh.phase!=='idle'?RAIN_VOL*.55:RAIN_VOL):0;
+  const want=(state==='play'||state==='scare'||state==='menu'), tgt=want?(gh.phase!=='idle'&&state!=='menu'?RAIN_VOL*.55:RAIN_VOL*(state==='menu'?.85:1)):0;
   rainWant=want;
   if(tgt!==rainTgt){rainTgt=tgt; if(rainG&&AC) rainG.gain.setTargetAtTime(tgt,AC.currentTime,.7);}
 }
@@ -1704,7 +1705,7 @@ function hit(x,z){for(const b of obstacles){if(x>b.x1-0.35&&x<b.x2+0.35&&z>b.z1-
 
 
 // ---------- Phông nền menu: tranh lâu đài ma trong rừng + mưa, dơi, mắt phát sáng, sét (nhịp sét dùng chung với hệ thống bão) ----------
-const mbg=$('mbg'), mfx=$('mfx'), mfl=$('mfl'), mimg=$('mimg'), mctx=mfx.getContext('2d');
+const msky=$('msky'), mbg=$('mbg'), mfx=$('mfx'), mfl=$('mfl'), mimg=$('mimg'), mctx=mfx.getContext('2d');
 const IMW=849, IMH=420;
 const EYES=[[95,60,0],[88,283,0],[72,198,1],[99,200,1],[790,66,1],[808,158,0],[777,296,0],[640,305,0],[752,250,1],[230,288,1],[110,244,0],[648,282,1],[60,300,0],[825,230,0]]
   .map(e=>({x:e[0],y:e[1],c:e[2]?'#ffc840':'#ff2a1a',t:Math.random()*9,p:.6+Math.random()*1.4}));
@@ -1718,7 +1719,9 @@ function menuBg(dt,on){
   const sc=Math.max(w/IMW,h/IMH), ox=(w-IMW*sc)/2, oy=(h-IMH*sc)/2, g=mctx;
   g.clearRect(0,0,w,h);
   const fv=flashV;
-  mimg.style.filter='brightness('+(.78+fv*.9).toFixed(2)+') contrast(1.06)';
+  mimg.style.filter='brightness('+(.5+fv*1.0).toFixed(2)+') contrast(1.08)';
+  msky.style.opacity=(.94*(1-Math.min(1,fv*1.35))).toFixed(2);          // sét đánh -> trời sáng bừng lên, hết sét -> đen lại
+  if(AC&&Math.random()<dt*.22) tone(3600+Math.random()*1800,.05,'sine',.02,6200);   // tiếng dơi rít xa
   mfl.style.opacity=Math.min(.6,fv*.6).toFixed(2);
   // tia sét thêm: mỗi lần sét đánh dựng một đường gấp khúc từ mây xuống
   if(boltT>mLastBolt+.3){ let x=w*(.1+Math.random()*.8), y=0; mBolt=[[x,y]]; while(y<h*(.45+Math.random()*.25)){x+=(Math.random()-.5)*w*.04; y+=h*(.03+Math.random()*.05); mBolt.push([x,y]);} }
