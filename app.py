@@ -242,6 +242,14 @@ GAME_HTML = r"""
   button:hover{background:#6a1414;box-shadow:0 0 12px #a00}
   .mb{display:flex;flex-direction:column;align-items:center;gap:6px}
   .mb button{width:260px;font-size:19px;padding:12px 22px}
+  #story{background:radial-gradient(ellipse at center,rgba(0,0,0,.6),rgba(0,0,0,.82))}
+  .sty{max-width:640px;max-height:56%;overflow:auto;padding:0 10px;margin-bottom:14px;text-align:center;line-height:1.7;color:#cfc6b6;font-size:17px}
+  .sty p{margin:0 auto 12px;max-width:none;opacity:0;animation:sfade 1.4s ease forwards}
+  .sty p:nth-child(1){animation-delay:.3s}.sty p:nth-child(2){animation-delay:2.3s}.sty p:nth-child(3){animation-delay:4.4s}
+  .sty p:nth-child(4){animation-delay:6.8s}.sty p:nth-child(5){animation-delay:8.8s}
+  .sty b{color:#fff}.sty .last{color:#d9b45a;font-size:20px;letter-spacing:2px}
+  .sty kbd{background:#2a1010;border:1px solid #7a2a2a;border-radius:3px;padding:0 6px;font-family:inherit;color:#ffd86b}
+  @keyframes sfade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
   .hw{max-width:700px;text-align:left;line-height:1.5;color:#c9c0b0;font-size:15px}
   .hw h3{margin:14px 0 4px;color:#d9b45a;font-size:17px;letter-spacing:1px}
   .hw ul{margin:0;padding-left:20px}
@@ -368,6 +376,18 @@ GAME_HTML = r"""
     <div class="row"><input id="vr" type="range" min="0" max="100" step="5" value="60"><span id="vv">60%</span></div>
   </div>
   <button id="sback">Quay lại</button>
+</div>
+
+<div id="story" class="ov">
+  <h1 style="font-size:40px;letter-spacing:8px">CỐT TRUYỆN</h1>
+  <div class="sty">
+    <p>Đêm bão. Bạn lạc giữa khu rừng cũ, và <b>tòa lâu đài trên đồi</b> là nơi duy nhất còn sáng đèn. Bạn bước vào tìm chỗ trú... rồi cánh cổng đóng sầm lại sau lưng.</p>
+    <p>Bên trong là <b>5 căn phòng bị khóa</b>. Mỗi cánh cửa chỉ mở bằng một mật mã <b>3 chữ số</b>, và những kẻ đến trước đã bỏ lại các tờ giấy nhàu, mỗi tờ viết một câu hỏi.</p>
+    <p>Hãy tìm <b>3 manh mối phát sáng</b> trong mỗi phòng, <b>trả lời đúng các câu hỏi</b> để lấy từng chữ số, rồi ghép chúng theo thứ tự gợi ý và nhập vào cửa. Trả lời sai hay nhập sai mật mã sẽ mất <b>1 trong 3 mạng</b>.</p>
+    <p>Nhưng bạn không đơn độc. Khi <b>đèn chớp liên tục</b>, có thứ gì đó đang tìm bạn. Chạy tới <b>tủ quần áo</b> hoặc <b>gầm giường</b>, bấm <kbd>E</kbd> để trốn, và đừng cử động.</p>
+    <p class="last">Vượt qua đủ 5 cánh cửa để <b>ESCAPE</b>.</p>
+  </div>
+  <div class="mb"><button id="sgo">BẮT ĐẦU</button><button id="sback">Quay lại</button></div>
 </div>
 
 <div id="howto" class="ov">
@@ -1356,7 +1376,7 @@ function startRoom(){
   ghostTimer=(door===0?38:28)+Math.random()*24; updateHud();
   banner('CỬA '+(door+1)+': '+DOORS[door].name+'\n'+DOORS[door].intro,4500);
 }
-function showOnly(id){['menu','howto','settings','over','win'].forEach(i=>$(i).style.display=(i===id?'flex':'none'));}
+function showOnly(id){['menu','story','howto','settings','over','win'].forEach(i=>$(i).style.display=(i===id?'flex':'none'));}
 function resetGame(){musicStop();hp=MAX_HP;hints=HINTS0;door=0;hintShown={};state='play';ambience();playMusicStart();
   camera.fov=72;camera.updateProjectionMatrix();$('scare').style.display='none';
   showOnly(''); startRoom(); syncLock();}
@@ -1369,7 +1389,7 @@ $('start').onclick=()=>{
       if(w){return;}
     }catch(e){}
   }
-  resetGame();
+  showOnly('story'); $('sgo').focus();            // bảng cốt truyện trước khi vào game
 };
 // Tab mới do trang Streamlit mở ra: biến luôn tab cũ thành game (không còn tab thừa), rồi tự đóng tab mới này.
 // Nếu trình duyệt không cho thì giữ tab mới, tab cũ để nguyên (không làm trống).
@@ -1389,6 +1409,7 @@ function setRF(v){RF=!!v; saveNum('doors_rf',RF?1:0); $('rfchk').checked=RF; $('
 $('rfchk').onchange=()=>setRF($('rfchk').checked); $('rfchk2').onchange=()=>setRF($('rfchk2').checked); setRF(RF);
 $('warnok').onclick=()=>{$('warn').style.display='none';};
 $('tomenu').onclick=toMenu; $('tomenu2').onclick=toMenu;
+$('sgo').onclick=resetGame; $('sback').onclick=()=>showOnly('menu');
 $('how').onclick=()=>showOnly('howto'); $('hback').onclick=()=>showOnly('menu');
 // ----- Cài đặt đồ họa (kiểu Roblox: thanh trượt 1-10; 1-5 = Thấp, 6-10 = Cao) -----
 function updateSettingsUI(){
