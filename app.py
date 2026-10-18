@@ -115,6 +115,7 @@ PLAY_MUSIC_FILE = "05. In The House.mp3"   # nhạc nền khi đang chơi
 # Đặt 2 file này cùng thư mục với app.py. Thiếu file thì game tự dùng âm thanh tổng hợp như cũ.
 # Tiếng bước chân: file "tiengchan.mp3" (đặt cùng thư mục với app.py). Game cắt từng bước chân theo bảng STEP_CLIPS
 # [giây bắt đầu, độ to] rồi phát lần lượt; chạy thì phát nhanh hơn + cao hơn một chút. Thiếu file -> dùng tiếng tổng hợp cũ.
+GHOST_FILE = "tiengma.mp3"      # tiếng ma: phát khi ma xuất hiện (đặt cùng thư mục với app.py; thiếu file -> dùng tiếng tổng hợp)
 STEP_FILE = "tiengchan.mp3"
 STEP_CLIPS = [[0.357, 0.126], [1.009, 0.144], [1.609, 0.085], [2.236, 0.152], [2.852, 0.159], [3.477, 0.216], [4.102, 0.09], [4.775, 0.137], [5.373, 0.078], [6.027, 0.132], [6.624, 0.088], [7.266, 0.21], [7.871, 0.219], [8.504, 0.177], [9.101, 0.236], [9.732, 0.196], [10.365, 0.212], [11.021, 0.115], [11.64, 0.086], [12.267, 0.153], [12.883, 0.157], [13.508, 0.215], [14.133, 0.089], [14.806, 0.137], [15.404, 0.078], [16.058, 0.132], [16.655, 0.142], [17.322, 0.126], [17.959, 0.136], [18.628, 0.115], [19.278, 0.116], [19.922, 0.21], [20.53, 0.253], [21.179, 0.152], [21.823, 0.087], [22.482, 0.154], [23.096, 0.083], [23.784, 0.121], [25.072, 0.092], [25.708, 0.107], [26.407, 0.112]]
 THUNDER_FILE = "thunder_fx.mp3"
@@ -771,7 +772,7 @@ const gArms=[], gHair=[], gMats=[]; let gHeadG, gMouth, gLight;
   ghostRoot.traverse(o=>{if(o.material&&!seen.has(o.material)){seen.add(o.material);o.material.transparent=true;o.material.opacity=0;gMats.push(o.material);}});
   ghostRoot.scale.set(1.05,1.05,1.05);
 })();
-function parkGhost(){$('bars').className='';if(camera.fov!==72){camera.fov=72;camera.updateProjectionMatrix();}gh.phase='idle';gh.alpha=0;gh.peek=0;ghostRoot.position.set(0,-80,0);ghostRoot.rotation.x=0;gLight.intensity=0;}
+function parkGhost(){ ghostSoundStop();$('bars').className='';if(camera.fov!==72){camera.fov=72;camera.updateProjectionMatrix();}gh.phase='idle';gh.alpha=0;gh.peek=0;ghostRoot.position.set(0,-80,0);ghostRoot.rotation.x=0;gLight.intensity=0;}
 
 // ---------- Dựng phòng ----------
 const M=(c,e)=>new THREE.MeshStandardMaterial({color:c,roughness:.9,emissive:e||0x000000,side:THREE.DoubleSide});
@@ -1151,8 +1152,27 @@ function ambience(){
     const wg=a.createGain();wg.gain.value=.022;s.connect(bp);bp.connect(wg);wg.connect(a.destination);s.start();
     const od=a.createOscillator(),dl=a.createBiquadFilter();droneG=a.createGain();droneG.gain.value=0;od.type='sawtooth';od.frequency.value=62;
     dl.type='lowpass';dl.frequency.value=260;od.connect(dl);dl.connect(droneG);droneG.connect(a.destination);od.start();
-    stormAudioLoad(a); stepAudioLoad(a);
+    stormAudioLoad(a); stepAudioLoad(a); ghostAudioLoad(a);
   }catch(e){}
+}
+// ---------- Tiếng ma (tiengma.mp3): phát 1 lần ~6 giây lúc ma xuất hiện, vào nhỏ dần rồi tắt ----------
+const GHOST_SRC="__GHOST__", GH_DUR=6.2, GH_VOL=.8;
+let ghBuf=null, ghLoading=false, ghSrc=null, ghGain=null;
+function ghostAudioLoad(a){ if(!GHOST_SRC||ghBuf||ghLoading) return; ghLoading=true; decodeBuf(a,GHOST_SRC).then(b=>{ghBuf=b;}).catch(()=>{}); }
+function ghostSoundStop(){
+  try{ if(ghSrc&&ghGain){ const a=ac(),t=a.currentTime; ghGain.gain.cancelScheduledValues(t); ghGain.gain.setValueAtTime(ghGain.gain.value,t); ghGain.gain.linearRampToValueAtTime(0,t+.5); ghSrc.stop(t+.55); } }catch(e){}
+  ghSrc=null; ghGain=null;
+}
+function ghostSound(){
+  if(!ghBuf) return false;
+  try{
+    ghostSoundStop();
+    const a=ac(); if(a.state==='suspended'&&a.resume) a.resume();
+    const t=a.currentTime, g=a.createGain(), s=a.createBufferSource(); s.buffer=ghBuf;
+    g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(GH_VOL,t+.2);
+    g.gain.setValueAtTime(GH_VOL,t+GH_DUR-1); g.gain.linearRampToValueAtTime(0,t+GH_DUR);
+    s.connect(g).connect(a.destination); s.start(t,0,GH_DUR); ghSrc=s; ghGain=g; return true;
+  }catch(e){ return false; }
 }
 // ---------- Bước chân thật (cắt từ tiengchan.mp3); chạy -> nhanh hơn + cao giọng hơn ----------
 const STEP_SRC="__STEP__", SCLIPS=__SCLIPS__, STEP_REF=.3, STEP_VOL=1.0;   // SCLIPS: [giây bắt đầu, độ to]
@@ -1538,7 +1558,8 @@ function ghostSpawn(){
   let best=c[0],bd=-1; c.forEach(p=>{const d=Math.hypot(p[0]-camera.position.x,p[1]-camera.position.z);if(d>bd){bd=d;best=p;}});
   gh.x=best[0]; gh.z=best[1]; gh.phase='reveal'; gh.t0=gh.t=2.2; gh.step=0; gh.alpha=0; gh.shr=false;
   gh.face=Math.atan2(camera.position.x-gh.x,camera.position.z-gh.z);
-  noise(1.4,.3); tone(70,1.6,'sawtooth',.2,160);
+  if(ghostSound()) gh.shr=true;            // có file tiếng ma -> bỏ tiếng gào tổng hợp
+  else{ noise(1.4,.3); tone(70,1.6,'sawtooth',.2,160); }
 }
 function moveGhost(tx,tz,sp,dt){
   const dx=tx-gh.x,dz=tz-gh.z,d=Math.hypot(dx,dz)||1,s=Math.min(d,sp*dt);
@@ -1940,6 +1961,7 @@ _html = (GAME_HTML.replace("__DATA__", build_data())
          .replace("__MENUBG__", MENU_BG)
          .replace("__MUSIC__", load_mp3(MUSIC_FILE, PLAY_MUSIC_FILE, True))
          .replace("__MUSIC2__", load_mp3(PLAY_MUSIC_FILE))
+         .replace("__GHOST__", load_mp3(GHOST_FILE))
          .replace("__STEP__", load_mp3(STEP_FILE))
          .replace("__SCLIPS__", json.dumps(STEP_CLIPS))
          .replace("__THUNDER__", load_asset(THUNDER_FILE, "audio/mpeg"))
