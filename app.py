@@ -250,6 +250,7 @@ GAME_HTML = r"""
   .sty p{margin:0 auto 14px;max-width:none;opacity:0;animation:sfade 1.5s ease forwards}
   .sty p:nth-child(1){animation-delay:.5s}.sty p:nth-child(2){animation-delay:2.4s}
   .sty b{color:#fff}
+  .sty .cl{color:#ffd86b;letter-spacing:1px;text-shadow:0 0 10px #c8861a,0 0 22px #6a4a10}
   .sty kbd{background:#2a1010;border:1px solid #7a2a2a;border-radius:3px;padding:0 6px;font-family:inherit;color:#ffd86b}
   #story .mb button{opacity:0;animation:sfade 1.2s ease 3.4s forwards}
   @keyframes sfade{0%{opacity:0;filter:blur(9px);transform:translateY(12px) scale(1.04)}45%{opacity:.85}58%{opacity:.25}72%{opacity:.95}100%{opacity:1;filter:none;transform:none}}
@@ -382,9 +383,8 @@ GAME_HTML = r"""
 </div>
 
 <div id="story" class="ov">
-  <h1 id="sttl" style="font-size:40px">CỐT TRUYỆN</h1>
   <div class="sty">
-    <p>Tìm đủ <b>3 manh mối</b> trong mỗi phòng và <b>trả lời các câu hỏi</b> để mở cửa.</p>
+    <p>Tìm đủ <b class="cl">3 MANH MỐI PHÁT SÁNG</b> trong mỗi phòng và <b>trả lời các câu hỏi</b> để mở cửa.</p>
     <p>Khi có ma xuất hiện, hãy <b>trốn dưới gầm giường</b> hoặc <b>trong tủ quần áo</b> (bấm <kbd>E</kbd>).</p>
   </div>
   <div class="mb"><button id="sgo">BẮT ĐẦU</button></div>
@@ -436,7 +436,6 @@ GAME_HTML = r"""
     </ul>
     <p style="margin:10px 0 0;max-width:none">Nếu cảm thấy chóng mặt, buồn nôn, đau đầu hoặc khó chịu, hãy <b>dừng chơi ngay</b> và nghỉ ngơi.</p>
   </div>
-  <label class="chk"><input type="checkbox" id="rfchk"> Giảm hiệu ứng chớp sáng (khuyên dùng nếu nhạy cảm với ánh sáng)</label>
   <button id="warnok" style="font-size:19px;padding:12px 30px">Tôi hiểu, tiếp tục</button>
 </div>
 
@@ -1417,8 +1416,8 @@ if(!inFrame&&location.hash==='#fromframe'&&window.opener){
     },150);
   }catch(e){}
 }
-function setRF(v){RF=!!v; saveNum('doors_rf',RF?1:0); $('rfchk').checked=RF; $('rfchk2').checked=RF;}
-$('rfchk').onchange=()=>setRF($('rfchk').checked); $('rfchk2').onchange=()=>setRF($('rfchk2').checked); setRF(RF);
+function setRF(v){RF=!!v; saveNum('doors_rf',RF?1:0); $('rfchk2').checked=RF;}
+$('rfchk2').onchange=()=>setRF($('rfchk2').checked); setRF(RF);
 $('warnok').onclick=()=>{$('warn').style.display='none';};
 $('tomenu').onclick=toMenu; $('tomenu2').onclick=toMenu;
 $('sgo').onclick=()=>{storyStop();resetGame();};
