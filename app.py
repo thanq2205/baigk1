@@ -207,7 +207,8 @@ GAME_HTML = r"""
   #ui{position:absolute;left:0;top:0;width:1280px;height:720px;transform-origin:0 0;overflow:hidden;pointer-events:none}
   .ov,#modal,#sl,#fs,button,input{pointer-events:auto}
   #fs{position:absolute;top:8px;right:10px;z-index:30;padding:5px 10px;font-size:13px;margin:0;opacity:.75}
-  #fs:hover{opacity:1}
+  #fs:hover,#mu:hover{opacity:1}
+  #mu{position:absolute;top:8px;right:74px;z-index:30;padding:5px 9px;font-size:13px;margin:0;opacity:.75}
   #lockbtn{position:absolute;right:16px;bottom:16px;z-index:7;width:56px;height:56px;padding:0;margin:0;border-radius:50%;
            font-size:18px;font-weight:bold;background:rgba(0,0,0,.55);border:2px solid #9a2a2a;display:none}
   #lockbtn.on{background:rgba(120,90,10,.75);border-color:#ffd86b;box-shadow:0 0 14px #a80}
@@ -326,6 +327,7 @@ GAME_HTML = r"""
   #joyB{width:150px;height:150px;margin:-75px;border:2px solid rgba(255,255,255,.35);background:rgba(255,255,255,.06)}
   #joyK{width:64px;height:64px;margin:-32px;background:rgba(255,255,255,.3);border:2px solid rgba(255,255,255,.55)}
   .touch #fs{padding:10px 16px;font-size:18px}
+  .touch #mu{padding:10px 14px;font-size:18px;right:104px}
   #rot{position:fixed;inset:0;z-index:99;background:#000;color:#d9b45a;display:none;align-items:center;justify-content:center;
        text-align:center;padding:20px;font-size:22px;letter-spacing:2px}
 </style>
@@ -336,7 +338,7 @@ GAME_HTML = r"""
 <div id="cross"></div>
 <div id="hud"><div id="dn"></div><div id="hp"></div><div id="hn"></div><div id="ks"></div><div id="ot"></div></div>
 <div id="help">WASD / ←→: di chuyển · Kéo chuột: nhìn · Shift: Shift Lock · Giữ Space: chạy · E: tương tác · A/B/C/D: chọn đáp án · Esc: đóng</div>
-<button id="fs" title="Toàn màn hình">FULL</button>
+<button id="fs" title="Toàn màn hình">FULL</button><button id="mu" title="Bật / tắt âm thanh">🔊</button>
 <button id="lockbtn" title="Shift Lock (phím Shift)">SL</button>
 <div id="tui"><div id="joyB"></div><div id="joyK"></div><div id="tE" class="tb">E</div><div id="tRun" class="tb">CHẠY</div></div>
 <div id="prompt"></div>
@@ -459,6 +461,14 @@ const $=id=>document.getElementById(id);
 const SRC='<!DOCTYPE html>\n'+document.documentElement.outerHTML;   // bản sao trang để mở ở tab mới
 function loadNum(k,d,lo,hi){try{const v=parseInt(localStorage.getItem(k));return(v>=lo&&v<=hi)?v:d;}catch(e){return d;}}
 function saveNum(k,v){try{localStorage.setItem(k,v);}catch(e){}}
+// Nút tắt/bật âm thanh: mọi nút phát ra loa đều được dẫn qua 1 gain tổng (master) để tắt tiếng một lần là im hết
+let MUTED=loadNum('doors_mute',0,0,1)===1;
+const _mc=AudioNode.prototype.connect, masters=new WeakMap();
+function masterOf(ctx){let m=masters.get(ctx); if(!m){m=ctx.createGain(); m.gain.value=MUTED?0:1; _mc.call(m,ctx.destination); masters.set(ctx,m);} return m;}
+AudioNode.prototype.connect=function(d,...r){
+  try{ if(typeof AudioDestinationNode!=='undefined'&&d instanceof AudioDestinationNode) d=masterOf(d.context); }catch(e){}
+  return _mc.call(this,d,...r);
+};
 const COARSE=!!(window.matchMedia&&matchMedia('(pointer:coarse)').matches);   // điện thoại / máy tính bảng
 let Q=loadNum('doors_q',COARSE?4:8,1,10), HQ=Q>=6;       // mức đồ họa 1-10 (<=5: Thấp, >=6: Cao)
 let STW=1280, STH=720, mouseX=0, mouseY=0, mouseIn=false, optOrder=[], wrongSet={}, lockFailShown=false, lockBlocked=false, lockEver=false, lockMsgT=0, touchMode=COARSE;
@@ -1679,8 +1689,14 @@ addEventListener('resize',fit);
 document.addEventListener('fullscreenchange',fit);
 $('lockbtn').onclick=()=>{if(state==='play'&&!modalOpen&&!transitioning)toggleSL();};
 document.querySelectorAll('#ui button').forEach(b=>b.addEventListener('click',()=>b.blur()));   // nhả focus để Space/Enter không bấm lại nút
+function setMute(v){
+  MUTED=!!v; saveNum('doors_mute',MUTED?1:0); $('mu').textContent=MUTED?'🔇':'🔊';
+  try{ const m=AC&&masters.get(AC); if(m) m.gain.setTargetAtTime(MUTED?0:1,AC.currentTime,.04); }catch(e){}
+  bgm.muted=MUTED; pbgm.muted=MUTED;
+}
+$('mu').onclick=()=>setMute(!MUTED); setMute(MUTED);
 $('fs').onclick=()=>{try{if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen();}catch(e){}};
-if(!document.documentElement.requestFullscreen) $('fs').style.display='none';   // iPhone không hỗ trợ toàn màn hình
+if(!document.documentElement.requestFullscreen){ $('fs').style.display='none'; $('mu').style.right='10px'; }   // iPhone không hỗ trợ toàn màn hình
 
 // ----- Điều khiển cảm ứng: cần gạt trái = đi, vuốt phải = nhìn, nút E = tương tác, nút CHẠY = chạy -----
 const joy={x:0,y:0}; let touchRun=false, joyId=null, joyOX=0, joyOY=0, lookId=null, lookX=0, lookY=0;
