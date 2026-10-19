@@ -287,7 +287,7 @@ GAME_HTML = r"""
   #scare{position:absolute;inset:0;width:100%;height:100%;display:none;pointer-events:none;z-index:10;image-rendering:pixelated}
   #hide{position:absolute;inset:0;display:none;pointer-events:none;z-index:4}
   /* Tủ: hai cánh cửa khép lại, chỉ chừa 1 kẽ hở DỌC ở giữa để nhìn ra ngoài (mép cửa có viền gỗ mờ) */
-  #hide.ward{background:linear-gradient(90deg,#000 0 46.6%,#24170e 46.6% 47.6%,transparent 47.6% 52.4%,#24170e 52.4% 53.4%,#000 53.4% 100%)}
+  #hide.ward{background:linear-gradient(90deg,#000 0 45.6%,#24170e 45.6% 46.6%,transparent 46.6% 53.4%,#24170e 53.4% 54.4%,#000 54.4% 100%)}
   #hide.bed{background:linear-gradient(#000 0 42%,transparent 60%),radial-gradient(ellipse at center,transparent 45%,rgba(0,0,0,.85) 100%)}
   #vig{position:absolute;inset:0;pointer-events:none;z-index:3;
        background:radial-gradient(ellipse at center,transparent 38%,rgba(0,0,0,.55) 75%,rgba(0,0,0,.95) 100%)}
@@ -1876,7 +1876,10 @@ function update(dt){
     if(doorOpen&&camera.position.z<-RD/2+0.6) camera.position.x=Math.max(-0.75,Math.min(0.75,camera.position.x));
     if(doorOpen&&camera.position.z<-RD/2-0.3&&!transitioning) nextRoom();
   }
-  if(hidden&&curSpot){ yaw=Math.max(curSpot.yaw-.75,Math.min(curSpot.yaw+.75,yaw)); pitch=Math.max(-.35,Math.min(.4,pitch)); }
+  if(hidden&&curSpot){
+    if(curSpot.type==='ward'){ yaw=curSpot.yaw; pitch=0; }       // trốn trong tủ: chỉ nhìn qua khe hở, không xoay camera được
+    else { yaw=Math.max(curSpot.yaw-.75,Math.min(curSpot.yaw+.75,yaw)); pitch=Math.max(-.35,Math.min(.4,pitch)); }
+  }
   if(!hidden) camera.position.y=1.6+(moving?Math.sin(bob)*0.04:0);
   if(doorOpen){ if(doorPivot.rotation.y<1.9) doorPivot.rotation.y=Math.min(1.9,doorPivot.rotation.y+dt*1.5);
     doorLight.intensity=Math.min(1.8,doorLight.intensity+dt*1.5); }
