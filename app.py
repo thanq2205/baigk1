@@ -286,7 +286,8 @@ GAME_HTML = r"""
   #fade{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none;transition:opacity .8s;z-index:12}
   #scare{position:absolute;inset:0;width:100%;height:100%;display:none;pointer-events:none;z-index:10;image-rendering:pixelated}
   #hide{position:absolute;inset:0;display:none;pointer-events:none;z-index:4}
-  #hide.ward{background:linear-gradient(#000 0 40%,transparent 40% 58%,#000 58% 100%)}
+  /* Tủ: hai cánh cửa khép lại, chỉ chừa 1 kẽ hở DỌC ở giữa để nhìn ra ngoài (mép cửa có viền gỗ mờ) */
+  #hide.ward{background:linear-gradient(90deg,#000 0 46.4%,#1e140d 46.4% 47.2%,rgba(0,0,0,.55) 47.2% 47.9%,transparent 48.6% 51.4%,rgba(0,0,0,.55) 52.1% 52.8%,#1e140d 52.8% 53.6%,#000 53.6% 100%)}
   #hide.bed{background:linear-gradient(#000 0 42%,transparent 60%),radial-gradient(ellipse at center,transparent 45%,rgba(0,0,0,.85) 100%)}
   #vig{position:absolute;inset:0;pointer-events:none;z-index:3;
        background:radial-gradient(ellipse at center,transparent 38%,rgba(0,0,0,.55) 75%,rgba(0,0,0,.95) 100%)}
