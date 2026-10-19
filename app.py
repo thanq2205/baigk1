@@ -287,7 +287,7 @@ GAME_HTML = r"""
   #scare{position:absolute;inset:0;width:100%;height:100%;display:none;pointer-events:none;z-index:10;image-rendering:pixelated}
   #hide{position:absolute;inset:0;display:none;pointer-events:none;z-index:4}
   /* Tủ: hai cánh cửa khép lại, chỉ chừa 1 kẽ hở DỌC ở giữa để nhìn ra ngoài (mép cửa có viền gỗ mờ) */
-  #hide.ward{background:linear-gradient(90deg,#000 0 43%,#24170e 43% 44.2%,transparent 44.2% 55.8%,#24170e 55.8% 57%,#000 57% 100%)}
+  #hide.ward{background:linear-gradient(90deg,#000 0 46.6%,#24170e 46.6% 47.6%,transparent 47.6% 52.4%,#24170e 52.4% 53.4%,#000 53.4% 100%)}
   #hide.bed{background:linear-gradient(#000 0 42%,transparent 60%),radial-gradient(ellipse at center,transparent 45%,rgba(0,0,0,.85) 100%)}
   #vig{position:absolute;inset:0;pointer-events:none;z-index:3;
        background:radial-gradient(ellipse at center,transparent 38%,rgba(0,0,0,.55) 75%,rgba(0,0,0,.95) 100%)}
@@ -893,10 +893,10 @@ function buildRoom(){
   const crate=(x,z,s,ry)=>{const b=box(s,s,s,woodMid,x,s/2,z);b.rotation.y=ry||0;addObs(x,z,s*1.2,s*1.2);};
   const wardrobe=(x,z,fx,fz)=>{const gp=grp(x,z,fx,fz);
     box(1.5,2.8,.95,woodM,0,1.4,0,gp);box(1.64,.14,1.08,woodDark,0,2.86,0,gp,false);box(1.6,.1,1.04,woodDark,0,.05,0,gp,false);
-    box(.72,2.55,.03,woodMid,-.37,1.4,.49,gp,false);box(.72,2.55,.03,woodMid,.37,1.4,.49,gp,false);box(.03,2.55,.04,black,0,1.4,.49,gp,false);
+    const dL=box(.72,2.55,.03,woodMid,-.37,1.4,.49,gp,false), dR=box(.72,2.55,.03,woodMid,.37,1.4,.49,gp,false), dS=box(.03,2.55,.04,black,0,1.4,.49,gp,false);
     [-.1,.1].forEach(dx=>box(.04,.2,.04,brass,dx,1.3,.53,gp,false));
     const d=dims(fx,fz,1.5,.95);addObs(x,z,d[0],d[1]);
-    const sp={kind:'hide',type:'ward',x,z,r:2.6,fx,fz,hx:x,hz:z,hy:1.5,yaw:Math.atan2(-fx,-fz),ex:x+fx*1.5,ez:z+fz*1.5,gd:2.4,bend:.85,sink:0};
+    const sp={kind:'hide',type:'ward',x,z,r:2.6,fx,fz,hx:x,hz:z,hy:1.5,yaw:Math.atan2(-fx,-fz),ex:x+fx*1.5,ez:z+fz*1.5,gd:2.4,bend:.85,sink:0,doors:[dL,dR,dS]};
     inter.push(sp);spots.push(sp);};
   const bed=(x,z,wallSide,fx,fz,col)=>{const gp=new THREE.Group();gp.position.set(x,0,z);gp.rotation.y=wallSide<0?0:Math.PI;room.add(gp);
     [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(p=>box(.08,.5,.08,woodDark,p[0]*1.1,.25,p[1]*.7,gp,false));
@@ -1534,11 +1534,11 @@ function nextRoom(){
 function toggleHide(sp){
   if(!hidden){
     if(gh.phase!=='idle'&&Math.hypot(gh.x-camera.position.x,gh.z-camera.position.z)<3&&gh.phase==='hunt'){banner('Quá muộn! Ma ở quá gần!',1500);return;}
-    hidden=true; curSpot=sp; camera.position.set(sp.hx,sp.hy,sp.hz); yaw=sp.yaw; pitch=0; spot.intensity=0;
+    hidden=true; curSpot=sp; wardDoors(sp,true); camera.position.set(sp.hx,sp.hy,sp.hz); yaw=sp.yaw; pitch=0; spot.intensity=0;
     $('hide').className=sp.type; $('hide').style.display='block'; noise(.25,.08); tone(90,.2,'square',.05,70);
   } else {
     if(gh.phase!=='idle'){banner('Ma vẫn còn ở đây... đừng ra!',1600);return;}
-    hidden=false; let ex=curSpot.ex,ez=curSpot.ez,k=0;
+    hidden=false; wardDoors(curSpot,false); let ex=curSpot.ex,ez=curSpot.ez,k=0;
     while(hit(ex,ez)&&k<4){ex+=curSpot.fx*.5;ez+=curSpot.fz*.5;k++;}
     camera.position.set(ex,1.6,ez); spot.intensity=2.1; $('hide').style.display='none'; curSpot=null; noise(.2,.06);
   }
@@ -1827,6 +1827,11 @@ function menuBg(dt,on){
   MRAIN.forEach(r=>{ r.y+=r.v*dt; r.x-=.12*dt; if(r.y>1){r.y=-.05;r.x=Math.random()*1.1;} if(r.x<0)r.x+=1.05;
     g.moveTo(r.x*w,r.y*h); g.lineTo(r.x*w-r.l*w*.12,(r.y+r.l)*h); });
   g.stroke();
+}
+// Trốn trong tủ: hai cánh cửa 3D trước đây che kín tầm nhìn (camera nằm trong tủ) -> khi trốn, hé hai cánh ra tạo khe hở thật để thấy phòng bên ngoài
+function wardDoors(sp,open){
+  if(!sp||!sp.doors) return; const [l,r,m]=sp.doors, g=open?.09:0;
+  l.position.x=-.37-g; r.position.x=.37+g; m.visible=!open;
 }
 function update(dt){
   tt+=dt;
