@@ -637,6 +637,12 @@ const paintTex=v=>T('paint'+v,256,320,(g,w,h)=>{
   g.strokeStyle='#000';g.lineWidth=3;g.beginPath();g.moveTo(w/2-28+ox,158);g.quadraticCurveTo(w/2+ox,180+(v%3)*8,w/2+28+ox,158);g.stroke();
   g.strokeStyle='rgba(0,0,0,.5)';g.lineWidth=1;for(let i=0;i<8;i++){g.beginPath();g.moveTo(rnd(0,w),rnd(0,h));g.lineTo(rnd(0,w),rnd(0,h));g.stroke();}
   stains(g,w,h,14,.35);noiseFx(g,w,h,26);});
+const paperTex=()=>T('paper',128,180,(g,w,h)=>{
+  g.fillStyle='#d9ceae';g.fillRect(0,0,w,h);
+  g.strokeStyle='rgba(60,40,20,.55)';g.lineWidth=2;
+  for(let y=26;y<h-12;y+=14){g.beginPath();g.moveTo(14,y);g.lineTo(w-14-(y%3)*10,y+((y*7)%5)-2);g.stroke();}
+  g.fillStyle='rgba(120,10,10,.8)';g.font='bold 22px serif';g.fillText('?',w/2-6,22);
+  stains(g,w,h,8,.25);noiseFx(g,w,h,22);});
 const bloodTex=()=>T('blood',128,128,(g,w,h)=>{
   for(let i=0;i<26;i++){const x=64+rnd(-40,40),y=64+rnd(-40,40),r=rnd(2,16),gr=g.createRadialGradient(x,y,0,x,y,r);
     gr.addColorStop(0,'rgba(110,5,5,.95)');gr.addColorStop(1,'rgba(90,0,0,0)');g.fillStyle=gr;g.beginPath();g.arc(x,y,r,0,7);g.fill();}});
@@ -839,7 +845,7 @@ function buildRoom(keep){
   if(!keep) disposeRoom();
   room=new THREE.Group(); scene.add(room);
   obstacles=[]; inter=[]; watchers=[]; spots=[]; doorOpen=false; curSpot=null; fireMat=null;
-  const sz=SIZES[door%SIZES.length]; RW=sz[0]; RD=sz[1];
+  const sz=SIZES[layoutOrder[door%5]]; RW=sz[0]; RD=sz[1];
   const lay=layoutOrder[door%5], hw=RW/2, hd=RD/2, m=mirrorArr[door%5], S1=-m, S2=m;
   scene.fog=new THREE.FogExp2(0x050202,0.04+door*0.004);
   renderer.shadowMap.enabled=HQ; spot.castShadow=HQ; lamp.castShadow=HQ;
@@ -983,11 +989,19 @@ function buildRoom(keep){
     new THREE.MeshStandardMaterial({map:tx,transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2,roughness:.4}));
     p.position.set(x,y,z);p.rotation.set(rx||0,ry||0,0);p.receiveShadow=true;room.add(p);};
   const clue=(idx,x,y,z,sx,sy,sz2,lz)=>{
-    const mat=new THREE.MeshStandardMaterial({color:0xffcc55,emissive:0xffaa22,emissiveIntensity:1.4});
-    box(sx,sy,sz2,mat,x,y,z,null,false);
+    const isPic=sy>=.2;                       // sy lớn -> bức tranh treo tường; sy nhỏ -> tờ giấy đặt trên mặt bàn/tủ
+    const tx=isPic?paintTex(idx):paperTex();
+    const mat=new THREE.MeshStandardMaterial({map:tx,emissiveMap:tx,color:0xffffff,emissive:0xffaa22,emissiveIntensity:1.4,roughness:.8,side:THREE.DoubleSide});
+    if(isPic){
+      box(sx+.2,sy+.2,.06,M(0x6b5320),x,y,z+.04,null,false);            // khung tranh
+      const pc=new THREE.Mesh(new THREE.PlaneGeometry(sx,sy),mat); pc.position.set(x,y,z); pc.rotation.y=Math.PI; room.add(pc);
+    } else {
+      const gp=new THREE.Group(); gp.position.set(x,y-sy/2+.009,z); gp.rotation.y=(idx-1)*.5+.2; room.add(gp);
+      const pp=new THREE.Mesh(new THREE.PlaneGeometry(.5,.36),mat); pp.rotation.x=-Math.PI/2; gp.add(pp);   // tờ giấy nằm phẳng
+    }
     const L=clueL[idx];L.color.set(0xffaa44);L.position.set(x,y+0.4,z+lz);
     const halo=new THREE.Sprite(new THREE.SpriteMaterial({map:haloTex(),color:0xffcc66,transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false,fog:false}));
-    halo.position.set(x,y+.05,z+lz*.4);halo.scale.set(1.6,1.6,1);room.add(halo);
+    halo.position.set(x,y+.05,z+lz*.4);halo.scale.set(isPic?2.4:1.4,isPic?2.4:1.4,1);room.add(halo);
     inter.push({kind:'clue',idx,x,z,r:2.6,mat,L,halo});};
 
   // ---- bày trí: mỗi phòng một bố cục riêng ----
@@ -997,8 +1011,7 @@ function buildRoom(keep){
   const wx=(s,o)=>s*(hw-o);
   const candle=(x,z,h)=>{cyl(.04,.04,.22,8,M(0xddd5c0),x,h+.11,z,null,false);
     const f1=new THREE.Mesh(new THREE.SphereGeometry(.045,8,6),new THREE.MeshBasicMaterial({color:0xffc060}));f1.position.set(x,h+.27,z);room.add(f1);};
-  const paintClue=(idx,cx)=>{box(1.7,1.4,.06,M(0x6b5320),cx,2.0,hd-.06,null,false);
-    clue(idx,cx,2.0,hd-.1,1.5,1.2,.04,-.7);plane(1.3,1.0,lit(paintTex(3)),cx,2.0,hd-.16,Math.PI);};
+  const paintClue=(idx,cx)=>clue(idx,cx,2.0,hd-.1,1.5,1.2,.04,-.7);   // manh mối dạng bức tranh
   // thảm: mỗi phòng một kích thước
   const rs=[[7,12],[4.5,18],[2.4,26],[3.6,22],[6,24]][lay];
   const rug=new THREE.Mesh(new THREE.PlaneGeometry(rs[0],rs[1]),new THREE.MeshStandardMaterial({map:rugTex(),roughness:1}));
@@ -1027,10 +1040,10 @@ function buildRoom(keep){
     bed(wx(1,1.4),RD*0.26,1,0,-1,pick([0x4a1a4a,0x5a3a1a,0x1a4a4a]));
     sofa(wx(1,.9),RD*0.37,-1,0,pick([0x5a1212,0x1a3a2a,0x2a2a4a]));
     wardrobe(wx(1,.55),RD*0.47,-1,0);
-    wardrobe(4.5,hd-.55,0,-1);
+    wardrobe(5.5,hd-.55,0,-1);
     paintClue(2,-4.5);
     box(1.0,1,1,woodMid,-7.6,.5,hd-.8); addObs(-7.6,hd-.8,1.0,1.0);
-    barrel(-(hw-.7),-hd+.8); barrel(-(hw-1.5),-hd+.7); crate(hw-.8,-hd+.8,.9,.4); crate(hw-1.8,-hd+.7,.7,.9);
+    barrel(-(hw-.7),-hd+.8); barrel(-(hw-1.6),-hd+.7); crate(hw-.8,-hd+.8,.9,.4); crate(hw-1.8,-hd+.7,.7,.9);
     painting(0,wx(-1,.05),2.5,RD*0.36,ryOf(-1),1,1.25);
     painting(1,wx(1,.05),3.1,-RD*0.20,ryOf(1),1,1.25);
     painting(2,wx(1,.05),2.3,RD*0.26,ryOf(1),1,1.25);
@@ -1040,7 +1053,7 @@ function buildRoom(keep){
     windowAt(wx(-1,.06),2.4,-RD*0.25,ryOf(-1));
     windowAt(wx(1,.06),2.4,4.2,ryOf(1));
     windowAt(-6.5,2.4,-hd+.06,0); windowAt(6.5,2.4,-hd+.06,0);
-    windowAt(1.5,2.4,hd-.06,Math.PI);
+    windowAt(2.5,2.4,hd-.06,Math.PI);
     sconceMesh(wx(1,.1),RD*0.05,ryOf(1));
     sconceL[1].position.set(wx(-1,.9),2.6,-RD*0.15);
     break;}
@@ -1070,7 +1083,7 @@ function buildRoom(keep){
     windowAt(wx(-1,.06),2.4,1.5,ryOf(-1)); windowAt(wx(-1,.06),2.4,5.5,ryOf(-1));
     windowAt(wx(1,.06),2.4,-3.5,ryOf(1)); windowAt(wx(1,.06),2.4,.5,ryOf(1));
     windowAt(-7.5,2.4,-hd+.06,0); windowAt(7.5,2.4,-hd+.06,0);
-    windowAt(1.5,2.4,hd-.06,Math.PI); windowAt(8.5,2.4,hd-.06,Math.PI);
+    windowAt(3.2,2.4,hd-.06,Math.PI); windowAt(8.5,2.4,hd-.06,Math.PI);
     sconceMesh(wx(-1,.1),3.5,ryOf(-1)); sconceMesh(wx(1,.1),-1.5,ryOf(1));
     break;}
 
@@ -2001,7 +2014,7 @@ function introUpdate(dt){
   pitch=pitchT; yaw=Math.sin(e*.55)*.07*(1-sit);
   camera.position.y=.42+(1.6-.42)*sit+Math.sin(e*1.7)*.008*(1-sit)+Math.sin(e*3.1)*.012*sit*(1-sit)*4;
   // đôi tay: hiện lên trước mặt, nắm mở ngón tay, rồi hạ xuống khi ngồi dậy
-  handsG.visible=e>3.4&&e<8.4;
+  handsG.visible=false;   // đã bỏ đôi bàn tay ở cảnh mở đầu
   const up=easeIO((e-3.4)/1.2)*(1-easeIO((e-6.6)/1.6));
   handsG.position.y=-.62+(.62-.2)*up; handsG.position.z=-.55;
   handFingers.forEach(f=>{ const c=.5+.5*Math.sin(e*1.5+f.i*.55+(f.side>0?.7:0)), base=f.i===4?.15:.2;
