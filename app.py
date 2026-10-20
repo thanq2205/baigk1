@@ -195,12 +195,22 @@ EXTRA_QUESTIONS = [
     {"q": "Cái gì màu đen khi mua, màu đỏ khi dùng, màu xám khi bỏ đi?", "a": "Than củi", "w": ["Cái ô", "Quyển sách", "Con mèo"], "hint": "Dùng để nhóm bếp lò."},
     {"q": "Cái gì có nhiều thành phố, nhiều sông nhưng không có nhà và không có nước?", "a": "Bản đồ", "w": ["Quả trứng", "Cái nón", "Cây bút"], "hint": "Bạn dùng nó để tìm đường."},
     {"q": "Cái gì càng được thắp lên thì càng ngắn lại?", "a": "Cây nến", "w": ["Cái đèn pin", "Bóng đèn", "Mặt trăng"], "hint": "Nó tan chảy khi cháy."},
+]
+
+
+# 5 câu BẮT BUỘC: mỗi ván, mỗi phòng luôn có đúng 1 câu trong số này (phòng nào nhận câu nào là ngẫu nhiên).
+# 2 câu còn lại của mỗi phòng (tổng 10 câu) được bốc ngẫu nhiên từ kho gốc + EXTRA_QUESTIONS.
+FIXED_QUESTIONS = [
     {"q": "Alkene là gì?", "a": "Hydrocarbon mạch hở trong phân tử chứa 1 liên kết đôi", "w": ["Hydrocarbon mạch hở trong phân tử chứa 1 liên kết ba", "Hydrocarbon mạch vòng chứa liên kết đơn", "Hydrocarbon no mạch hở chỉ chứa liên kết đơn"], "hint": "Công thức chung CnH2n, có một liên kết C=C."},
     {"q": "Văn học trung đại xuất hiện ở thế kỷ nào?", "a": "Thế kỷ X - thế kỷ XIX", "w": ["Thế kỷ X - thế kỷ XV", "Thế kỷ XI - thế kỷ XIX", "Thế kỷ XV - thế kỷ XX"], "hint": "Kéo dài suốt gần 10 thế kỷ, bắt đầu từ thế kỷ X."},
     {"q": "Giải phương trình: 3x + 8 = 0.", "a": "x = -8/3", "w": ["x = 8/3", "x = -3/8", "x = 3/8"], "hint": "Chuyển 8 sang vế phải rồi chia cho 3."},
     {"q": "Đảng Cộng sản Việt Nam được thành lập vào ngày tháng năm nào?", "a": "03/02/1930", "w": ["19/05/1930", "02/09/1945", "22/12/1944"], "hint": "Ngày đầu tháng 2 năm 1930."},
     {"q": "Từ đồng nghĩa với cụm từ \"run out of\" là gì?", "a": "have no more", "w": ["take care of", "look for", "full of"], "hint": "Nghĩa là hết, cạn kiệt."},
 ]
+
+
+def build_fixed() -> str:
+    return json.dumps([{"q": q["q"], "o": [q["a"]] + q["w"], "hint": q["hint"]} for q in FIXED_QUESTIONS], ensure_ascii=False)
 
 
 def build_pool() -> str:
@@ -491,7 +501,7 @@ GAME_HTML = r"""
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 (function(){
-const DOORS_BASE = __DATA__, EXTRA_Q = __POOL__;
+const DOORS_BASE = __DATA__, EXTRA_Q = __POOL__, FIXED_Q = __FIXED__;
 const QPOOL = [].concat.apply([], DOORS_BASE.map(d=>d.questions)).concat(EXTRA_Q);
 let DOORS = DOORS_BASE;
 let layoutOrder=[0,1,2,3,4], wallOrder=[0,1,2,3,4], mirrorArr=[1,-1,1,-1,1], gameSeed=17;
@@ -499,9 +509,12 @@ let layoutOrder=[0,1,2,3,4], wallOrder=[0,1,2,3,4], mirrorArr=[1,-1,1,-1,1], gam
 function rollGame(){
   layoutOrder=shuffle([0,1,2,3,4]); wallOrder=shuffle([0,1,2,3,4]); mirrorArr=[0,1,2,3,4].map(()=>Math.random()<.5?1:-1); gameSeed=Math.floor(Math.random()*1e6);
   const pool=shuffle(QPOOL.map((_,i)=>i)); let p=0;
+  const fixed=shuffle(FIXED_Q.slice());   // 5 câu bắt buộc: mỗi phòng 1 câu, phòng nhận câu nào là ngẫu nhiên
   DOORS=[0,1,2,3,4].map(i=>{
     const base=DOORS_BASE[layoutOrder[i]];
-    const questions=[0,1,2].map(()=>{ const q=QPOOL[pool[p++%pool.length]]; return {q:q.q,o:q.o,hint:q.hint,digit:Math.floor(Math.random()*10)}; });
+    const picks=[0,1].map(()=>QPOOL[pool[p++%pool.length]]);          // 2 câu ngẫu nhiên
+    if(fixed.length) picks.push(fixed[i%fixed.length]);               // + 1 câu bắt buộc
+    const questions=shuffle(picks).map(q=>({q:q.q,o:q.o,hint:q.hint,digit:Math.floor(Math.random()*10)}));   // xáo vị trí chìa 1/2/3
     const order=shuffle([0,1,2]);
     return {name:base.name,intro:base.intro,order,order_text:'Ghép chìa '+order.map(k=>k+1).join(' → chìa ')+'.',questions};
   });
@@ -2281,6 +2294,7 @@ MENU_BG = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAUEBAQEAwUEBA
 
 _html = (GAME_HTML.replace("__DATA__", build_data())
          .replace("__POOL__", build_pool())
+         .replace("__FIXED__", build_fixed())
          .replace("__MENUBG__", MENU_BG)
          .replace("__MUSIC__", load_mp3(MUSIC_FILE, PLAY_MUSIC_FILE, True))
          .replace("__MUSIC2__", load_mp3(PLAY_MUSIC_FILE))
