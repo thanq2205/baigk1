@@ -118,6 +118,7 @@ PLAY_MUSIC_FILE = "05. In The House.mp3"   # nhạc nền khi đang chơi
 CATCH_FILE = "faaahhhh.mp3"     # tiếng khi ma bắt được người chơi (đặt cùng thư mục với app.py; thiếu file -> dùng tiếng gào tổng hợp)
 GHOST_FILE = "tiengma.mp3"      # tiếng ma: phát khi ma xuất hiện (đặt cùng thư mục với app.py; thiếu file -> dùng tiếng tổng hợp)
 STEP_FILE = "tiengchan.mp3"
+SIREN_FILE = "siren-head-sounds-new.mp3"   # tiếng còi kinh dị: thỉnh thoảng vang lên từ xa trong lúc chơi (đặt cùng thư mục với app.py; thiếu file -> bỏ qua)
 STEP_CLIPS = [[0.357, 0.126], [1.009, 0.144], [1.609, 0.085], [2.236, 0.152], [2.852, 0.159], [3.477, 0.216], [4.102, 0.09], [4.775, 0.137], [5.373, 0.078], [6.027, 0.132], [6.624, 0.088], [7.266, 0.21], [7.871, 0.219], [8.504, 0.177], [9.101, 0.236], [9.732, 0.196], [10.365, 0.212], [11.021, 0.115], [11.64, 0.086], [12.267, 0.153], [12.883, 0.157], [13.508, 0.215], [14.133, 0.089], [14.806, 0.137], [15.404, 0.078], [16.058, 0.132], [16.655, 0.142], [17.322, 0.126], [17.959, 0.136], [18.628, 0.115], [19.278, 0.116], [19.922, 0.21], [20.53, 0.253], [21.179, 0.152], [21.823, 0.087], [22.482, 0.154], [23.096, 0.083], [23.784, 0.121], [25.072, 0.092], [25.708, 0.107], [26.407, 0.112]]
 THUNDER_FILE = "thunder_fx.mp3"
 RAIN_FILE = "rain_loop.wav"
@@ -1280,7 +1281,7 @@ function ambience(){
     const wg=a.createGain();wg.gain.value=.022;s.connect(bp);bp.connect(wg);wg.connect(a.destination);s.start();
     const od=a.createOscillator(),dl=a.createBiquadFilter();droneG=a.createGain();droneG.gain.value=0;od.type='sawtooth';od.frequency.value=62;
     dl.type='lowpass';dl.frequency.value=260;od.connect(dl);dl.connect(droneG);droneG.connect(a.destination);od.start();
-    stormAudioLoad(a); stepAudioLoad(a); ghostAudioLoad(a); catchAudioLoad(a);
+    stormAudioLoad(a); stepAudioLoad(a); ghostAudioLoad(a); catchAudioLoad(a); sirenAudioLoad(a);
   }catch(e){}
 }
 // ---------- Tiếng khi ma bắt được (faaahhhh.mp3, ~1,7 giây; file rất to nên giảm còn CATCH_VOL) ----------
@@ -1311,6 +1312,32 @@ function ghostSound(){
     g.gain.setValueAtTime(GH_VOL,t+GH_DUR-1); g.gain.linearRampToValueAtTime(0,t+GH_DUR);
     s.connect(g).connect(a.destination); s.start(t,0,GH_DUR); ghSrc=s; ghGain=g; return true;
   }catch(e){ return false; }
+}
+// ---------- Tiếng còi kinh dị (siren-head-sounds-new.mp3, ~18 giây): lâu lâu vang lên từ xa, nhỏ dần vào/ra, tạm dừng khi ma xuất hiện ----------
+const SIREN_SRC="__SIREN__", SIREN_VOL=.5, SIREN_DUR=18.2;
+let sirBuf=null, sirLoading=false, sirSrc=null, sirGain=null, nextSiren=70+Math.random()*60;
+function sirenAudioLoad(a){ if(!SIREN_SRC||sirBuf||sirLoading) return; sirLoading=true; decodeBuf(a,SIREN_SRC).then(b=>{sirBuf=b;}).catch(()=>{}); }
+function sirenStop(){
+  try{ if(sirSrc&&sirGain){ const a=ac(),t=a.currentTime; sirGain.gain.cancelScheduledValues(t); sirGain.gain.setValueAtTime(sirGain.gain.value,t); sirGain.gain.linearRampToValueAtTime(0,t+.6); sirSrc.stop(t+.65); } }catch(e){}
+  sirSrc=null; sirGain=null;
+}
+function sirenPlay(){
+  if(!sirBuf) return false;
+  try{
+    sirenStop();
+    const a=ac(); if(a.state==='suspended'&&a.resume) a.resume();
+    const t=a.currentTime, d=Math.min(SIREN_DUR,sirBuf.duration), g=a.createGain(), lp=a.createBiquadFilter(), s=a.createBufferSource(); s.buffer=sirBuf;
+    lp.type='lowpass'; lp.frequency.value=5000;                      // nghe như vọng lại từ rất xa
+    g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(SIREN_VOL,t+2); g.gain.setValueAtTime(SIREN_VOL,t+d-3); g.gain.linearRampToValueAtTime(0,t+d);
+    s.connect(lp); lp.connect(g); g.connect(a.destination); s.start(t,0,d); sirSrc=s; sirGain=g;
+    s.onended=()=>{ if(sirSrc===s){sirSrc=null;sirGain=null;} };
+    return true;
+  }catch(e){ return false; }
+}
+function sirenUpdate(dt){            // gọi mỗi khung hình: mỗi ~1,5-3,5 phút còi vang một lần khi đang chơi và không có ma
+  if(state!=='play'||modalOpen||transitioning||intro.on||gh.phase!=='idle'){ if(sirSrc&&(state!=='play'||gh.phase!=='idle')) sirenStop(); return; }
+  if(sirSrc) return;
+  nextSiren-=dt; if(nextSiren<=0){ nextSiren=90+Math.random()*120; sirenPlay(); }
 }
 // ---------- Bước chân thật (cắt từ tiengchan.mp3); chạy -> nhanh hơn + cao giọng hơn ----------
 const STEP_SRC="__STEP__", SCLIPS=__SCLIPS__, STEP_REF=.3, STEP_VOL=1.0;   // SCLIPS: [giây bắt đầu, độ to]
@@ -2163,7 +2190,7 @@ function wardDoors(sp,open){
 function update(dt){
   tt+=dt;
   if(state!=='play'){flashG.visible=false;flashAmt=0;shDur=0;shadowG.visible=false;}
-  stormUpdate(dt); pulseClues(); rainUpdate();
+  stormUpdate(dt); pulseClues(); rainUpdate(); sirenUpdate(dt);
   const inMenu=(state==='menu');
   if(room) room.visible=!inMenu;
   menuBg(dt,inMenu);
@@ -2336,6 +2363,7 @@ _html = (GAME_HTML.replace("__DATA__", build_data())
          .replace("__CATCH__", load_mp3(CATCH_FILE))
          .replace("__GHOST__", load_mp3(GHOST_FILE))
          .replace("__STEP__", load_mp3(STEP_FILE))
+         .replace("__SIREN__", load_mp3(SIREN_FILE))
          .replace("__SCLIPS__", json.dumps(STEP_CLIPS))
          .replace("__THUNDER__", load_asset(THUNDER_FILE, "audio/mpeg"))
          .replace("__RAIN__", load_asset(RAIN_FILE, "audio/wav"))
