@@ -354,6 +354,7 @@ GAME_HTML = r"""
       display:flex;align-items:center;justify-content:center;pointer-events:auto;touch-action:none;user-select:none;-webkit-user-select:none}
   .tb.on{background:rgba(120,90,10,.75);border-color:#ffd86b}
   #tE{right:40px;bottom:70px;width:110px;height:110px;font-size:40px}
+  #tF{right:60px;bottom:200px;width:70px;height:70px;font-size:28px}
   #tRun{right:182px;bottom:34px;width:84px;height:84px;font-size:17px;letter-spacing:1px}
   #joyB,#joyK{position:absolute;border-radius:50%;display:none;pointer-events:none;z-index:7}
   #joyB{width:150px;height:150px;margin:-75px;border:2px solid rgba(255,255,255,.35);background:rgba(255,255,255,.06)}
@@ -369,10 +370,10 @@ GAME_HTML = r"""
 <div id="vig"></div><canvas id="grain"></canvas><div id="lowhp"></div>
 <div id="cross"></div>
 <div id="hud"><div id="dn"></div><div id="hp"></div><div id="hn"></div><div id="ks"></div><div id="ot"></div></div>
-<div id="help">WASD / ←→: di chuyển · Kéo chuột: nhìn · Shift: Shift Lock · Giữ Space: chạy · E: tương tác · A/B/C/D: chọn đáp án · Esc: đóng</div>
+<div id="help">WASD / ←→: di chuyển · Kéo chuột: nhìn · Shift: Shift Lock · Giữ Space: chạy · F: đèn pin · E: tương tác · A/B/C/D: chọn đáp án · Esc: đóng</div>
 <button id="fs" title="Toàn màn hình">FULL</button><button id="mu" title="Bật / tắt âm thanh">🔊</button>
 <button id="lockbtn" title="Shift Lock (phím Shift)">SL</button>
-<div id="tui"><div id="joyB"></div><div id="joyK"></div><div id="tE" class="tb">E</div><div id="tRun" class="tb">CHẠY</div></div>
+<div id="tui"><div id="joyB"></div><div id="joyK"></div><div id="tE" class="tb">E</div><div id="tRun" class="tb">CHẠY</div><div id="tF" class="tb">F</div></div>
 <div id="prompt"></div>
 <div id="banner"></div>
 <div id="whisper"></div>
@@ -436,6 +437,7 @@ GAME_HTML = r"""
       <li>Khi tắt Shift Lock: giữ chuột trái hoặc phải rồi kéo để nhìn</li>
       <li><kbd>A</kbd><kbd>B</kbd><kbd>C</kbd><kbd>D</kbd> hoặc bấm chuột: chọn đáp án khi trả lời câu hỏi</li>
       <li>Giữ <kbd>Space</kbd>: chạy</li>
+      <li><kbd>F</kbd>: bật / tắt <b>đèn pin</b>. Thỉnh thoảng cả phòng sẽ <b>mất điện</b> trong ít giây, chỉ còn đèn pin và các manh mối phát sáng</li>
       <li><b>Điện thoại</b> (nên xoay ngang): cần gạt bên trái màn hình để đi, vuốt bên phải để nhìn, nút <kbd>E</kbd> để tương tác, giữ nút <kbd>CHẠY</kbd> để chạy</li>
       <li><kbd>E</kbd>: tương tác (xem manh mối, mở cửa, trốn vào tủ / gầm giường)</li>
       <li><kbd>Esc</kbd>: đóng bảng câu hỏi</li>
@@ -525,6 +527,7 @@ let RF=loadNum('doors_rf',0,0,1)===1;   // giảm hiệu ứng chớp sáng
 let hp=MAX_HP, hints=HINTS0, door=0, solved=[false,false,false], hintShown={};
 let state='menu', modalOpen=false, modalMode='q', modalIdx=0, hidden=false, doorOpen=false, transitioning=false;
 let yaw=0, pitch=0, dragging=false, shake=0, bob=0, bannerT=null, cur=null, curSpot=null, spots=[];
+let flashOn=true, blackT=0, blackD=1, nextBlack=40+Math.random()*30;   // đèn pin + mất điện
 let keys={}, tt=0, stepT=0, hbT=0, evT=14, flickT=0, nextFlick=12, lampF=1, dark=0;
 let shiftLock=false, expectUnlock=false, scareT=0, scareYaw=0, ghostTimer=40, scareFlashT=0;
 let doorGlow=null; const GAP=.2, rooms=[];   // rooms[i]: phòng KỀ BÊN đã dựng (không phải phòng hiện tại), dùng để nhìn xuyên cửa và đi qua lại
@@ -559,8 +562,8 @@ fit();
 
 // Đèn pin
 const spot=new THREE.SpotLight(0xfff0cc,2.1,24,Math.PI/5.2,0.5,1.1);
-spot.position.set(0.2,-0.1,0);   // đèn pin đã bỏ: spot không gắn vào camera/scene nên không chiếu sáng
- camera.add(spot.target); spot.target.position.set(0,0,-3);
+spot.position.set(0.2,-0.1,0);   // đèn pin gắn vào camera
+ camera.add(spot); camera.add(spot.target); spot.target.position.set(0,0,-3);
 spot.shadow.mapSize.set(1024,1024); spot.shadow.camera.near=0.2; spot.shadow.camera.far=24; spot.shadow.bias=-0.0006;
 const ambL=new THREE.AmbientLight(0x4a3a34,0.85); scene.add(ambL);
 // Các đèn cố định (tạo một lần để tránh biên dịch lại shader)
@@ -774,7 +777,7 @@ function stormUpdate(dt){
       :(e<.07?1:e<.13?.12:e<.24?.95:e<.34?.25:e<.46?.6:Math.max(0,.55*(1-(e-.46)/.54)));
   } else flashV=0;
   if(thunderIn>-100){thunderIn-=dt; if(thunderIn<=0){thunderIn=-999; thunder(thunderNear);}}
-  stormL.intensity=flashV*3;
+  stormL.intensity=flashV*(blackT>0?.6:3);
   stAcc+=dt;
   if(stAcc>(flashV>0?.016:.05)){drawStorm(stAcc); stAcc=0; stTex.needsUpdate=true;}
 }
@@ -1484,7 +1487,7 @@ $('mi').addEventListener('keydown',e=>{if(e.key==='Enter')submit();});
 // ---------- Luồng game ----------
 function startRoom(){
   solved=[false,false,false]; buildRoom(); hidden=false; spot.intensity=2.1; $('hide').style.display='none';
-  camera.position.set(0,1.6,RD/2-2); yaw=0; pitch=0; lampF=1; dark=0; parkGhost();
+  camera.position.set(0,1.6,RD/2-2); yaw=0; pitch=0; lampF=1; dark=0; blackT=0; nextBlack=40+Math.random()*30; flashOn=true; parkGhost();
   ghostTimer=(door===0?38:28)+Math.random()*24; updateHud();
   const rb=['CỬA '+(door+1)+': '+DOORS[door].name+'\n'+DOORS[door].intro,4500];
   if(introWant){ introWant=false; introSnd=0; introBegin(); intro.banner=rb; } else banner(rb[0],rb[1]);
@@ -1651,6 +1654,16 @@ function toggleHide(sp){
     camera.position.set(ex,1.6,ez); spot.intensity=2.1; $('hide').style.display='none'; curSpot=null; noise(.2,.06);
   }
 }
+function toggleFlash(){
+  if(state!=='play'||modalOpen||hidden||transitioning||intro.on) return;
+  flashOn=!flashOn; tone(flashOn?900:600,.05,'square',.06); noise(.03,.05);
+}
+function startBlackout(){
+  blackD=blackT=9+Math.random()*6; nextBlack=50+Math.random()*40; flashOn=true;
+  try{ tone(80,.6,'sawtooth',.14,35); noise(.25,.14); }catch(e){}
+  banner('MẤT ĐIỆN!\nDùng đèn pin (F) — manh mối vẫn phát sáng',3200);
+}
+function endBlackout(){ blackT=0; try{ tone(140,.3,'square',.06,260); }catch(e){} banner('Điện đã có lại.',1800); }
 function act(){
   if(hidden){toggleHide();return;}
   if(!cur) return;
@@ -1803,6 +1816,7 @@ addEventListener('keydown',e=>{
   keys[e.code]=true;
   if(intro.on){ if(e.code==='Enter') introEnd(); return; }   // đang tỉnh dậy: khóa điều khiển, Enter để bỏ qua
   if(e.code==='KeyE'&&state==='play'&&!transitioning) act();
+  if(e.code==='KeyF'&&!e.repeat) toggleFlash();
   if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code)) e.preventDefault();
 });
 addEventListener('keyup',e=>{keys[e.code]=false;});
@@ -1888,6 +1902,7 @@ function tBtn(el,down,up){
   ['touchend','touchcancel'].forEach(n=>el.addEventListener(n,e=>{e.preventDefault();if(up)up();}));
 }
 tBtn($('tE'),()=>{if(state==='play'&&!transitioning)act();});
+tBtn($('tF'),()=>toggleFlash());
 tBtn($('tRun'),()=>{touchRun=true;$('tRun').classList.add('on');},()=>{touchRun=false;$('tRun').classList.remove('on');});
 setTouch(touchMode);
 
@@ -2086,7 +2101,7 @@ function update(dt){
   }
   if(!hidden) camera.position.y=1.6+(moving?Math.sin(bob)*0.04:0);
   if(intro.on) introUpdate(dt);
-  nextL.intensity=rooms[door+1]?.9:0; prevL.intensity=rooms[door-1]?.5:0;
+  nextL.intensity=blackT>0?0:(rooms[door+1]?.9:0); prevL.intensity=blackT>0?0:(rooms[door-1]?.5:0);
   if(doorOpen){ if(doorPivot.rotation.y>-1.7) doorPivot.rotation.y=Math.max(-1.7,doorPivot.rotation.y-dt*1.5);   // cánh cửa mở vào phía trong phòng
     if(doorGlow&&rooms[door+1]) doorGlow.visible=false;      // đã có phòng sau -> thấy thẳng phòng sau qua ô cửa
     doorLight.intensity=Math.min(1.8,doorLight.intensity+dt*1.5); }
@@ -2121,6 +2136,10 @@ function update(dt){
     nextFlick-=dt; if(nextFlick<=0){flickT=.5;nextFlick=10+Math.random()*15;tone(120,.5,'sawtooth',.05,60);}
     evT-=dt; if(evT<=0){evT=12+Math.random()*14;tone(rnd(110,240),.8,'sawtooth',.04,rnd(60,100)); if(Math.random()<.6)whisper();}
   }
+  if(!modalOpen&&!transitioning&&!intro.on){
+    if(blackT>0){ blackT-=dt; if(ghostOn||blackT<=0) endBlackout(); }
+    else if(!ghostOn){ nextBlack-=dt; if(nextBlack<=0){ if(ghostTimer>14) startBlackout(); else nextBlack=6; } }
+  }
   hbT-=dt;
   if(hbT<=0){
     if(ghostOn&&gh.phase!=='leave'){const dd=Math.hypot(gh.x-camera.position.x,gh.z-camera.position.z);
@@ -2140,10 +2159,12 @@ function update(dt){
   if(RF) lampF=gh.phase==='warn'?.35+.25*Math.sin(tt*2.5):(ghostOn?.12:(flickT>0?.5:1));   // chế độ giảm chớp: đèn mờ/sáng chậm, không nhấp nháy
   // Sét đánh: đèn điện trong phòng tắt phụt đúng 1 nhịp lúc tia chớp rồi sáng lại (giảm chớp: chỉ mờ đi nhẹ)
   if(boltT>0&&(1-boltT)<.22) lampF=Math.min(lampF,RF?.45:.04);
-  ambL.intensity=.6*(1-dark*.7)+flashV*1.2;
+  let bf=1;
+  if(blackT>0){ const el=blackD-blackT; bf=(!RF&&(el<.6||blackT<.8))?(Math.random()<.35?1:0):0; lampF*=bf; }
+  ambL.intensity=blackT>0?(.02+flashV*.35):(.6*(1-dark*.7)+flashV*1.2);
   lamp.intensity=.8*lampF; lampB.intensity=.65*lampF;
-  if(flameMat){const v=Math.max(.15,lampF);flameMat.color.setRGB(v,.85*v,.63*v);}
-  if(!hidden) spot.intensity=2.1*(0.93+0.07*Math.sin(tt*23))*(lampF<.5?0.5:1);
+  if(flameMat){const v=Math.max(blackT>0?.04:.15,lampF);flameMat.color.setRGB(v,.85*v,.63*v);}
+  if(!hidden) spot.intensity=flashOn&&!intro.on?(blackT>0?3.8:1.5)*(0.96+0.04*Math.sin(tt*23))*(ghostOn?.5:1):0;
 
   updGhost(dt);
 }
