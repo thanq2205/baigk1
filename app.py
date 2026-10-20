@@ -996,8 +996,8 @@ function buildRoom(keep){
       box(sx+.2,sy+.2,.06,M(0x6b5320),x,y,z+.04,null,false);            // khung tranh
       const pc=new THREE.Mesh(new THREE.PlaneGeometry(sx,sy),mat); pc.position.set(x,y,z); pc.rotation.y=Math.PI; room.add(pc);
     } else {
-      const gp=new THREE.Group(); gp.position.set(x,y-sy/2+.009,z); gp.rotation.y=(idx-1)*.5+.2; room.add(gp);
-      const pp=new THREE.Mesh(new THREE.PlaneGeometry(.5,.36),mat); pp.rotation.x=-Math.PI/2; gp.add(pp);   // tờ giấy nằm phẳng
+      const gp=new THREE.Group(); gp.position.set(x,y-sy/2+.022,z); gp.rotation.y=(idx-1)*.5+.2; room.add(gp);
+      const pp=new THREE.Mesh(new THREE.PlaneGeometry(.62,.44),mat); pp.rotation.x=-Math.PI/2; gp.add(pp);   // tờ giấy nằm phẳng
     }
     const L=clueL[idx];L.color.set(0xffaa44);L.position.set(x,y+0.4,z+lz);
     const halo=new THREE.Sprite(new THREE.SpriteMaterial({map:haloTex(),color:0xffcc66,transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false,fog:false}));
