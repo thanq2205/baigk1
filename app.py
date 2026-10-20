@@ -195,6 +195,11 @@ EXTRA_QUESTIONS = [
     {"q": "Cái gì màu đen khi mua, màu đỏ khi dùng, màu xám khi bỏ đi?", "a": "Than củi", "w": ["Cái ô", "Quyển sách", "Con mèo"], "hint": "Dùng để nhóm bếp lò."},
     {"q": "Cái gì có nhiều thành phố, nhiều sông nhưng không có nhà và không có nước?", "a": "Bản đồ", "w": ["Quả trứng", "Cái nón", "Cây bút"], "hint": "Bạn dùng nó để tìm đường."},
     {"q": "Cái gì càng được thắp lên thì càng ngắn lại?", "a": "Cây nến", "w": ["Cái đèn pin", "Bóng đèn", "Mặt trăng"], "hint": "Nó tan chảy khi cháy."},
+    {"q": "Alkene là gì?", "a": "Hydrocarbon mạch hở trong phân tử chứa 1 liên kết đôi", "w": ["Hydrocarbon mạch hở trong phân tử chứa 1 liên kết ba", "Hydrocarbon mạch vòng chứa liên kết đơn", "Hydrocarbon no mạch hở chỉ chứa liên kết đơn"], "hint": "Công thức chung CnH2n, có một liên kết C=C."},
+    {"q": "Văn học trung đại xuất hiện ở thế kỷ nào?", "a": "Thế kỷ X - thế kỷ XIX", "w": ["Thế kỷ X - thế kỷ XV", "Thế kỷ XI - thế kỷ XIX", "Thế kỷ XV - thế kỷ XX"], "hint": "Kéo dài suốt gần 10 thế kỷ, bắt đầu từ thế kỷ X."},
+    {"q": "Giải phương trình: 3x + 8 = 0.", "a": "x = -8/3", "w": ["x = 8/3", "x = -3/8", "x = 3/8"], "hint": "Chuyển 8 sang vế phải rồi chia cho 3."},
+    {"q": "Đảng Cộng sản Việt Nam được thành lập vào ngày tháng năm nào?", "a": "03/02/1930", "w": ["19/05/1930", "02/09/1945", "22/12/1944"], "hint": "Ngày đầu tháng 2 năm 1930."},
+    {"q": "Từ đồng nghĩa với cụm từ \"run out of\" là gì?", "a": "have no more", "w": ["take care of", "look for", "full of"], "hint": "Nghĩa là hết, cạn kiệt."},
 ]
 
 
