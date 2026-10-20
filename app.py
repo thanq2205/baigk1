@@ -549,7 +549,7 @@ let flashOn=true, blackT=0, blackD=1, nextBlack=40+Math.random()*30;   // đèn 
 let keys={}, tt=0, stepT=0, hbT=0, evT=14, flickT=0, nextFlick=12, lampF=1, dark=0;
 let shiftLock=false, expectUnlock=false, scareT=0, scareYaw=0, ghostTimer=40, scareFlashT=0;
 let doorGlow=null; const GAP=.2, rooms=[];   // rooms[i]: phòng KỀ BÊN đã dựng (không phải phòng hiện tại), dùng để nhìn xuyên cửa và đi qua lại
-let room=null, doorPivot=null, obstacles=[], inter=[], watchers=[], flameMat=null, fireMat=null;
+let shapeBlocks=[], room=null, doorPivot=null, obstacles=[], inter=[], watchers=[], flameMat=null, fireMat=null;
 const gh={phase:'idle',t:0,t0:1,x:0,z:0,alpha:0,peek:0,face:0,step:0,ux:0,uz:1};
 
 // ---------- Renderer / Scene ----------
@@ -945,20 +945,20 @@ function buildRoom(keep){
   inter.push({kind:'door',x:0,z:dz,r:2.7});
 
   // ---- đồ nội thất (các hàm dựng) ----
-  const pillar=(x,z)=>{cyl(.38,.38,RH,14,M(0x4a4038),x,RH/2,z);box(1,.25,1,stone,x,.12,z);box(1,.25,1,stone,x,RH-.12,z,null,false);addObs(x,z,.8,.8);};
-  const table=(x,z,sx,sz2,h)=>{box(sx,.08,sz2,woodM,x,h,z);
+  let pillar=(x,z)=>{cyl(.38,.38,RH,14,M(0x4a4038),x,RH/2,z);box(1,.25,1,stone,x,.12,z);box(1,.25,1,stone,x,RH-.12,z,null,false);addObs(x,z,.8,.8);};
+  let table=(x,z,sx,sz2,h)=>{box(sx,.08,sz2,woodM,x,h,z);
     [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(p=>box(.1,h,.1,woodDark,x+p[0]*(sx/2-.1),h/2,z+p[1]*(sz2/2-.1)));addObs(x,z,sx,sz2);};
-  const chair=(x,z,ry)=>{const c=new THREE.Group();c.position.set(x,0,z);c.rotation.y=ry;room.add(c);
+  let chair=(x,z,ry)=>{const c=new THREE.Group();c.position.set(x,0,z);c.rotation.y=ry;room.add(c);
     box(.5,.05,.5,woodDark,0,.5,0,c,false);box(.5,.7,.05,woodDark,0,.85,-.22,c,false);
     [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(p=>box(.05,.5,.05,woodDark,p[0]*.22,.25,p[1]*.22,c,false));};
-  const shelf=(x,z,fx,fz,len)=>{const gp=grp(x,z,fx,fz);box(len,2.4,.5,woodDark,0,1.2,0,gp);
+  let shelf=(x,z,fx,fz,len)=>{const gp=grp(x,z,fx,fz);box(len,2.4,.5,woodDark,0,1.2,0,gp);
     const p=new THREE.Mesh(new THREE.PlaneGeometry(len-.1,2.3),lit(bookTex()));p.position.set(0,1.2,.26);gp.add(p);
     const d=dims(fx,fz,len,.5);addObs(x,z,d[0],d[1]);};
-  const clock=(x,z,fx,fz)=>{const gp=grp(x,z,fx,fz);box(.65,2.3,.42,woodDark,0,1.15,0,gp);
+  let clock=(x,z,fx,fz)=>{const gp=grp(x,z,fx,fz);box(.65,2.3,.42,woodDark,0,1.15,0,gp);
     box(.5,.5,.02,new THREE.MeshStandardMaterial({map:clockTex()}),0,1.75,.22,gp,false);box(.4,1.0,.02,M(0x0d0805),0,.75,.22,gp,false);
     cyl(.07,.07,.02,12,brass,0,.55,.23,gp,false).rotation.x=Math.PI/2;
     const d=dims(fx,fz,.65,.42);addObs(x,z,d[0],d[1]);};
-  const fireplace=(x,z,fx,fz)=>{const gp=grp(x,z,fx,fz);
+  let fireplace=(x,z,fx,fz)=>{const gp=grp(x,z,fx,fz);
     box(.35,1.9,.8,stone,-.95,.95,0,gp);box(.35,1.9,.8,stone,.95,.95,0,gp);box(2.5,.4,.9,stone,0,1.95,0,gp);
     box(2,1.6,.5,M(0x050303),0,.8,-.2,gp,false);box(2.6,.12,1.0,woodDark,0,2.2,.05,gp,false);
     const fl=new THREE.Mesh(new THREE.PlaneGeometry(1.1,.8),new THREE.MeshBasicMaterial({color:0xff6a1a,transparent:true,opacity:.85}));
@@ -966,24 +966,24 @@ function buildRoom(keep){
     [[-.3,0.25],[.3,-.2]].forEach(p=>{const lg2=cyl(.07,.07,.9,7,woodDark,p[0],.12,.05,gp,false);lg2.rotation.z=Math.PI/2;lg2.rotation.y=p[1];});
     sconceL[0].position.set(x+fx*1.2,1.0,z+fz*1.2);
     const d=dims(fx,fz,2.5,.9);addObs(x,z,d[0],d[1]);};
-  const sofa=(x,z,fx,fz,col)=>{const gp=grp(x,z,fx,fz),f=fab(col);
+  let sofa=(x,z,fx,fz,col)=>{const gp=grp(x,z,fx,fz),f=fab(col);
     box(2.4,.4,1,f,0,.3,0,gp);box(2.4,.75,.25,f,0,.78,-.4,gp);box(.25,.6,1,f,-1.08,.55,0,gp);box(.25,.6,1,f,1.08,.55,0,gp);
     box(.95,.18,.8,f,-.5,.55,.05,gp,false);box(.95,.18,.8,f,.5,.55,.05,gp,false);
     [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(p=>box(.08,.12,.08,woodDark,p[0]*1.1,.05,p[1]*.45,gp,false));
     const d=dims(fx,fz,2.4,1);addObs(x,z,d[0],d[1]);};
-  const dresser=(x,z,fx,fz)=>{const gp=grp(x,z,fx,fz);box(2.2,1.2,1,woodM,0,.6,0,gp);box(2.3,.07,1.1,woodDark,0,1.23,0,gp,false);
+  let dresser=(x,z,fx,fz)=>{const gp=grp(x,z,fx,fz);box(2.2,1.2,1,woodM,0,.6,0,gp);box(2.3,.07,1.1,woodDark,0,1.23,0,gp,false);
     for(let i=0;i<3;i++){box(.65,.4,.03,woodMid,-.72+i*.72,.8,.51,gp,false);box(.08,.04,.04,brass,-.72+i*.72,.8,.55,gp,false);}
     const d=dims(fx,fz,2.2,1);addObs(x,z,d[0],d[1]);};
-  const barrel=(x,z)=>{cyl(.36,.4,.95,12,woodMid,x,.475,z);[.2,.75].forEach(y=>cyl(.41,.41,.05,12,iron,x,y,z,null,false));addObs(x,z,.8,.8);};
-  const crate=(x,z,s,ry)=>{const b=box(s,s,s,woodMid,x,s/2,z);b.rotation.y=ry||0;addObs(x,z,s*1.2,s*1.2);};
-  const wardrobe=(x,z,fx,fz)=>{const gp=grp(x,z,fx,fz);
+  let barrel=(x,z)=>{cyl(.36,.4,.95,12,woodMid,x,.475,z);[.2,.75].forEach(y=>cyl(.41,.41,.05,12,iron,x,y,z,null,false));addObs(x,z,.8,.8);};
+  let crate=(x,z,s,ry)=>{const b=box(s,s,s,woodMid,x,s/2,z);b.rotation.y=ry||0;addObs(x,z,s*1.2,s*1.2);};
+  let wardrobe=(x,z,fx,fz)=>{const gp=grp(x,z,fx,fz);
     box(1.5,2.8,.95,woodM,0,1.4,0,gp);box(1.64,.14,1.08,woodDark,0,2.86,0,gp,false);box(1.6,.1,1.04,woodDark,0,.05,0,gp,false);
     const dL=box(.72,2.55,.03,woodMid,-.37,1.4,.49,gp,false), dR=box(.72,2.55,.03,woodMid,.37,1.4,.49,gp,false), dS=box(.03,2.55,.04,black,0,1.4,.49,gp,false);
     [-.1,.1].forEach(dx=>box(.04,.2,.04,brass,dx,1.3,.53,gp,false));
     const d=dims(fx,fz,1.5,.95);addObs(x,z,d[0],d[1]);
     const sp={kind:'hide',type:'ward',x,z,r:2.6,fx,fz,hx:x,hz:z,hy:1.5,yaw:Math.atan2(-fx,-fz),ex:x+fx*1.5,ez:z+fz*1.5,gd:2.4,bend:.85,sink:0,doors:[dL,dR,dS]};
     inter.push(sp);spots.push(sp);};
-  const bed=(x,z,wallSide,fx,fz,col)=>{const gp=new THREE.Group();gp.position.set(x,0,z);gp.rotation.y=wallSide<0?0:Math.PI;room.add(gp);
+  let bed=(x,z,wallSide,fx,fz,col)=>{const gp=new THREE.Group();gp.position.set(x,0,z);gp.rotation.y=wallSide<0?0:Math.PI;room.add(gp);
     [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(p=>box(.08,.5,.08,woodDark,p[0]*1.1,.25,p[1]*.7,gp,false));
     box(2.3,.12,1.5,woodDark,0,.56,0,gp);box(2.2,.22,1.4,fab(0x6b6358),0,.73,0,gp);
     box(.45,.12,.9,fab(0xcfc6b0),-.85,.9,0,gp,false);box(1.35,.07,1.46,fab(col),.35,.87,0,gp,false);
@@ -991,11 +991,11 @@ function buildRoom(keep){
     addObs(x,z,2.3,1.5);
     const sp={kind:'hide',type:'bed',x,z,r:2.6,fx,fz,hx:x,hz:z,hy:.32,yaw:Math.atan2(-fx,-fz),ex:x+fx*1.5,ez:z+fz*1.5,gd:2.7,bend:.72,sink:1.3};
     inter.push(sp);spots.push(sp);};
-  const painting=(v,x,y,z,ry,pw,ph)=>{const gp=new THREE.Group();gp.position.set(x,y,z);gp.rotation.y=ry;room.add(gp);
+  let painting=(v,x,y,z,ry,pw,ph)=>{const gp=new THREE.Group();gp.position.set(x,y,z);gp.rotation.y=ry;room.add(gp);
     box(pw+.16,ph+.16,.06,M(0x6b5320),0,0,0,gp,false);
     const t=paintTex(v),p=new THREE.Mesh(new THREE.PlaneGeometry(pw,ph),new THREE.MeshStandardMaterial({map:t,emissiveMap:t,emissive:0xffffff,emissiveIntensity:.2,roughness:.8}));
     p.position.z=.04;gp.add(p);};
-  const windowAt=(x,y,z,ry,ww,hh)=>{ww=ww||2.0;hh=hh||1.8;const gp=new THREE.Group();gp.position.set(x,y,z);gp.rotation.y=ry;room.add(gp);
+  let windowAt=(x,y,z,ry,ww,hh)=>{ww=ww||2.0;hh=hh||1.8;const gp=new THREE.Group();gp.position.set(x,y,z);gp.rotation.y=ry;room.add(gp);
     const geo=new THREE.PlaneGeometry(ww,hh),uv=geo.attributes.uv,o=Math.random(),uvW=Math.min(1,(ww/hh)*(192/256));
     for(let i=0;i<uv.count;i++)uv.setX(i,o+uv.getX(i)*uvW);
     const gl=new THREE.Mesh(geo,stormMat);gl.position.z=.02;gp.add(gl);
@@ -1003,7 +1003,7 @@ function buildRoom(keep){
     box(.1,hh+.2,.14,woodDark,-ww/2-.05,0,.04,gp,false);box(.1,hh+.2,.14,woodDark,ww/2+.05,0,.04,gp,false);
     box(.05,hh,.07,woodDark,0,0,.05,gp,false);box(ww,.05,.07,woodDark,0,hh*.12,.05,gp,false);
     const cu=fab(0x3a0c0c);box(.26,hh+.3,.1,cu,-ww/2-.28,0,.09,gp,false);box(.26,hh+.3,.1,cu,ww/2+.28,0,.09,gp,false);};
-  const sconceMesh=(x,z,ry)=>{const gp=new THREE.Group();gp.position.set(x,2.3,z);gp.rotation.y=ry;room.add(gp);
+  let sconceMesh=(x,z,ry)=>{const gp=new THREE.Group();gp.position.set(x,2.3,z);gp.rotation.y=ry;room.add(gp);
     box(.12,.4,.12,M(0x2a1a0a),0,0,.08,gp,false);
     const fl=new THREE.Mesh(new THREE.SphereGeometry(.07,8,6),new THREE.MeshBasicMaterial({color:0xffbb55}));fl.position.set(0,.28,.1);gp.add(fl);};
   const decal=(tx,w2,h2,x,y,z,ry,rx)=>{const p=new THREE.Mesh(new THREE.PlaneGeometry(w2,h2),
@@ -1030,13 +1030,47 @@ function buildRoom(keep){
   sconceL[0].position.set(-hw+1.2,2.4,-hd+5); sconceL[1].position.set(hw-1.2,2.6,hd-6);
   stormL.position.set(0,RH-.7,0);
   const wx=(s,o)=>s*(hw-o);
-  const candle=(x,z,h)=>{cyl(.04,.04,.22,8,M(0xddd5c0),x,h+.11,z,null,false);
+  let candle=(x,z,h)=>{cyl(.04,.04,.22,8,M(0xddd5c0),x,h+.11,z,null,false);
     const f1=new THREE.Mesh(new THREE.SphereGeometry(.045,8,6),new THREE.MeshBasicMaterial({color:0xffc060}));f1.position.set(x,h+.27,z);room.add(f1);};
   const paintClue=(idx,cx)=>clue(idx,cx,2.0,hd-.1,1.5,1.2,.04,-.7);   // manh mối dạng bức tranh
   // thảm: mỗi phòng một kích thước
   const rs=[[7,12],[4.5,18],[2.4,26],[3.6,22],[6,24]][lay];
   const rug=new THREE.Mesh(new THREE.PlaneGeometry(rs[0],rs[1]),new THREE.MeshStandardMaterial({map:rugTex(),roughness:1}));
   rug.rotation.x=-Math.PI/2; rug.position.set(0,.012,0); rug.receiveShadow=true; room.add(rug);
+
+  // ---- HÌNH DẠNG PHÒNG: khối tường đặc ở góc / cạnh làm mặt bằng thành chữ Z, T, thập, L... thay vì hình chữ nhật ----
+  // Mỗi khối [x1,x2,z1,z2] (tọa độ trong phòng): có tường + ốp gỗ + tranh ở mặt trong, chặn đường đi; đồ nội thất nằm trong/sát khối sẽ tự bị bỏ qua.
+  // Hành lang giữa (|x|<5) ở hai đầu phòng luôn trống để vào/ra cửa.
+  shapeBlocks=[
+    ()=>[[4.5,hw,-hd,-7],[-hw,-6.9,9.5,hd]],                                       // phòng 1: chữ Z (hai góc chéo nhau)
+    ()=>[[-hw,-5.5,-hd,-9],[5.5,hw,-hd,-9]],                                       // phòng 2: chữ T (đầu phòng thu hẹp lại)
+    ()=>[[-hw,-7,-hd,-10.5],[7,hw,-hd,-10.5],[-hw,-7,10.5,hd],[7,hw,10.5,hd]],     // phòng 3: chữ thập (cắt cả 4 góc)
+    ()=>[[5.5,hw,7,hd]],                                                           // phòng 4: chữ L (cụt hẳn một góc lớn)
+    ()=>[[-hw,-8.5,-11,-6],[8.5,hw,6,11]],                                         // phòng 5: hai ngách lệch nhau giữa hai bên tường
+  ][lay]();
+  const blocks=shapeBlocks;
+  const inB=(x,z,m)=>{m=m||0;for(const b of blocks){if(x>b[0]-m&&x<b[1]+m&&z>b[2]-m&&z<b[3]+m)return true;}return false;};
+  const paintRaw=painting;
+  blocks.forEach(b=>{
+    const x1=b[0],x2=b[1],z1=b[2],z2=b[3],bw=x2-x1,bd=z2-z1,cx=(x1+x2)/2,cz=(z1+z2)/2;
+    obstacles.push({x1:x1,x2:x2,z1:z1,z2:z2});
+    const face=(len,x,z,ry,nx,nz,ci)=>{          // một mặt tường trong của khối (bỏ mặt trùng tường ngoài)
+      plane(len,RH,lit(wallTex(wi,len/2,RH/2)),x,RH/2,z,ry); wains(len,x,z,ry);
+      if(len>=3){ const ps=len>6?[-len/4,len/4]:[0];
+        ps.forEach((o,k)=>paintRaw((door+ci+k*2)%4,x+(ry===0||ry===Math.PI?o:0)+nx*.05,2.35,z+(ry===0||ry===Math.PI?0:o)+nz*.05,ry===0?0:ry===Math.PI?Math.PI:(nx>0?Math.PI/2:-Math.PI/2),1,1.25)); } };
+    if(z1>-hd+.01) face(bw,cx,z1,Math.PI,0,-1,0);
+    if(z2<hd-.01) face(bw,cx,z2,0,0,1,1);
+    if(x1>-hw+.01) face(bd,x1,cz,Math.PI/2,-1,0,2);
+    if(x2<hw-.01) face(bd,x2,cz,Math.PI/2,1,0,3);
+  });
+  const _g=(f,xi,zi,m)=>function(){return inB(arguments[xi],arguments[zi],m)?undefined:f.apply(null,arguments);};
+  pillar=_g(pillar,0,1,1.3); table=_g(table,0,1,1.3); chair=_g(chair,0,1,1.3); shelf=_g(shelf,0,1,1.3);
+  clock=_g(clock,0,1,1.3); fireplace=_g(fireplace,0,1,1.6); sofa=_g(sofa,0,1,1.4); dresser=_g(dresser,0,1,1.3);
+  barrel=_g(barrel,0,1,1.2); crate=_g(crate,0,1,1.2); candle=_g(candle,0,1,1.0); sconceMesh=_g(sconceMesh,0,1,1.0);
+  windowAt=_g(windowAt,0,2,1.3); painting=_g(painting,1,3,1.3);
+  const _hide=(f,fi)=>function(){const a=arguments,x=a[0],z=a[1],fx=a[fi],fz=a[fi+1];     // tủ / giường: cả chỗ trốn lẫn lối ra phải thoáng
+    if(inB(x,z,1.3)||inB(x+fx*1.6,z+fz*1.6,.3)||inB(x+fx*2.9,z+fz*2.9,.3)) return; return f.apply(null,a);};
+  wardrobe=_hide(wardrobe,2); bed=_hide(bed,3);
 
   switch(lay){
 
@@ -1063,7 +1097,7 @@ function buildRoom(keep){
     wardrobe(wx(1,.55),RD*0.47,-1,0);
     wardrobe(5.5,hd-.55,0,-1);
     paintClue(2,-4.5);
-    box(1.0,1,1,woodMid,-7.6,.5,hd-.8); addObs(-7.6,hd-.8,1.0,1.0);
+    if(!inB(-7.6,hd-.8,1.2)){ box(1.0,1,1,woodMid,-7.6,.5,hd-.8); addObs(-7.6,hd-.8,1.0,1.0); }
     barrel(-(hw-.7),-hd+.8); barrel(-(hw-1.6),-hd+.7); crate(hw-.8,-hd+.8,.9,.4); crate(hw-1.8,-hd+.7,.7,.9);
     painting(0,wx(-1,.05),2.5,RD*0.36,ryOf(-1),1,1.25);
     painting(1,wx(1,.05),3.1,-RD*0.20,ryOf(1),1,1.25);
@@ -1119,7 +1153,7 @@ function buildRoom(keep){
     for(let i=0;i<6;i++){flask(-4.5,.99,-6.8+i*1.2,fc[i]);flask(3.5,.99,-6.8+i*1.2,fc[(i+2)%6]);}
     clue(0,-4,1.03,-3.5,.5,.08,.35,0);
     clue(1,4,1.03,-5,.5,.08,.35,0);
-    const tank=(x,z)=>{cyl(.62,.62,.12,16,woodDark,x,.06,z);cyl(.62,.62,.12,16,woodDark,x,2.5,z,null,false);
+    const tank=(x,z)=>{ if(inB(x,z,1.3)) return; cyl(.62,.62,.12,16,woodDark,x,.06,z);cyl(.62,.62,.12,16,woodDark,x,2.5,z,null,false);
       cyl(.52,.52,2.4,16,gm2(0x33ff88),x,1.3,z,null,false);addObs(x,z,1.3,1.3);};
     tank(wx(-1,1.4),-hd+1.4); tank(wx(1,1.4),-hd+1.4); tank(wx(-1,1.4),-hd+3);
     barrel(-8,-11); barrel(-7.2,-11.6);
@@ -1159,7 +1193,7 @@ function buildRoom(keep){
   // ===== PHÒNG 5: PHÒNG CUỐI CÙNG — đại điện lộng lẫy, hai hàng cột, tượng đá, cửa sổ cao sát trần =====
   case 4:{
     [-11,-4,3,10].forEach(z=>[-5.5,5.5].forEach(x=>pillar(x,z)));
-    const statue=(x,z)=>{box(1,.6,1,stone,x,.3,z);cyl(.28,.4,1.9,10,M(0x2a2a2e),x,1.55,z);
+    const statue=(x,z)=>{ if(inB(x,z,1.3)) return; box(1,.6,1,stone,x,.3,z);cyl(.28,.4,1.9,10,M(0x2a2a2e),x,1.55,z);
       const h2=new THREE.Mesh(new THREE.SphereGeometry(.24,12,10),M(0x2a2a2e));h2.position.set(x,2.65,z);h2.castShadow=true;room.add(h2);addObs(x,z,1,1);};
     statue(-3.6,-hd+1.3); statue(3.6,-hd+1.3);
     wardrobe(wx(-1,.55),-8,1,0);
@@ -1201,7 +1235,7 @@ function buildRoom(keep){
   const eyeMat=new THREE.MeshBasicMaterial({color:0xff2020});
   const spotsE=[[-hw+.6,3.5,-hd+3],[hw-.6,3.5,-hd+3],[-hw+.6,3.6,hd-3],[hw-.6,3.6,hd-3],[0,3.7,-hd+.6],[-hw+.6,3.3,0],[hw-.6,3.3,-2],[0,3.7,hd-.6]];
   const nW=Math.min(2+door,spotsE.length);
-  for(let i=0;i<nW;i++){const s=spotsE[(i*3+door)%spotsE.length];const gp=new THREE.Group();gp.position.set(s[0],s[1],s[2]);
+  for(let i=0;i<nW;i++){const s=spotsE[(i*3+door)%spotsE.length]; if(inB(s[0],s[2],1.2)) continue; const gp=new THREE.Group();gp.position.set(s[0],s[1],s[2]);
     [-0.2,0.2].forEach(dx=>{const e=new THREE.Mesh(new THREE.SphereGeometry(.07,8,6),eyeMat);e.scale.set(1.4,.8,.5);e.position.x=dx;gp.add(e);});
     room.add(gp);watchers.push({g:gp,t:rnd(0,20),off:rnd(0,6)});}
   resetDust();
@@ -1618,8 +1652,8 @@ $('vr').oninput=()=>{musicVol=+$('vr').value/100;$('vv').textContent=$('vr').val
 ['pointerdown','keydown'].forEach(ev=>addEventListener(ev,()=>{try{const a=ac(); if(a.resume)a.resume(); stormAudioLoad(a);}catch(e){}},{capture:true,once:true}));   // nạp tiếng sấm cho menu
 function snapLights(){const f=l=>({p:l.position.clone(),c:l.color.clone()}); return {lamp:f(lamp),lampB:f(lampB),door:f(doorLight),sc:sconceL.map(f),cl:clueL.map(f)};}
 function applyLights(o){const a=(l,v)=>{l.position.copy(v.p);l.color.copy(v.c);}; a(lamp,o.lamp);a(lampB,o.lampB);a(doorLight,o.door);sconceL.forEach((l,i)=>a(l,o.sc[i]));clueL.forEach((l,i)=>a(l,o.cl[i]));}
-const saveRoomState=()=>({room,obstacles,inter,watchers,spots,doorPivot,flameMat,fireMat,doorOpen,RW,RD,doorGlow,fog:scene.fog,solved,lights:snapLights()});
-function loadRoomState(o){room=o.room;obstacles=o.obstacles;inter=o.inter;watchers=o.watchers;spots=o.spots;doorPivot=o.doorPivot;flameMat=o.flameMat;fireMat=o.fireMat;doorOpen=o.doorOpen;curSpot=null;RW=o.RW;RD=o.RD;doorGlow=o.doorGlow;scene.fog=o.fog;solved=o.solved;applyLights(o.lights);}
+const saveRoomState=()=>({blocks:shapeBlocks,room,obstacles,inter,watchers,spots,doorPivot,flameMat,fireMat,doorOpen,RW,RD,doorGlow,fog:scene.fog,solved,lights:snapLights()});
+function loadRoomState(o){shapeBlocks=o.blocks||[];room=o.room;obstacles=o.obstacles;inter=o.inter;watchers=o.watchers;spots=o.spots;doorPivot=o.doorPivot;flameMat=o.flameMat;fireMat=o.fireMat;doorOpen=o.doorOpen;curSpot=null;RW=o.RW;RD=o.RD;doorGlow=o.doorGlow;scene.fog=o.fog;solved=o.solved;applyLights(o.lights);}
 // Đặt các phòng kề bên theo gốc tọa độ = phòng hiện tại; đèn phụ chiếu sáng phòng kế/phòng trước để nhìn xuyên ô cửa
 function layoutNeighbors(){
   room.position.z=0; room.visible=true; watchers.forEach(w=>{w.g.visible=true;});
@@ -1706,7 +1740,8 @@ function ghostSpawn(){
   // Ma hiện ra Ở XA người chơi: chọn điểm xa nhất trong phòng (giữa 4 cạnh + 4 góc). Người chơi vẫn đi lại bình thường.
   const ax=RW/2-2.5, az=RD/2-2.5;
   const c=[[0,-az],[0,az],[-ax,0],[ax,0],[-ax,-az],[ax,-az],[-ax,az],[ax,az]];
-  let best=c[0],bd=-1; c.forEach(p=>{const d=Math.hypot(p[0]-camera.position.x,p[1]-camera.position.z);if(d>bd){bd=d;best=p;}});
+  const okc=c.filter(p=>!shapeBlocks.some(b=>p[0]>b[0]-1.8&&p[0]<b[1]+1.8&&p[1]>b[2]-1.8&&p[1]<b[3]+1.8)), cc=okc.length?okc:c;   // không cho ma hiện hình trong tường
+  let best=cc[0],bd=-1; cc.forEach(p=>{const d=Math.hypot(p[0]-camera.position.x,p[1]-camera.position.z);if(d>bd){bd=d;best=p;}});
   gh.x=best[0]; gh.z=best[1]; gh.phase='reveal'; gh.t0=gh.t=2.2; gh.step=0; gh.alpha=0; gh.shr=false;
   gh.face=Math.atan2(camera.position.x-gh.x,camera.position.z-gh.z);
   if(ghostSound()) gh.shr=true;            // có file tiếng ma -> bỏ tiếng gào tổng hợp
