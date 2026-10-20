@@ -1659,7 +1659,7 @@ function toggleFlash(){
   flashOn=!flashOn; tone(flashOn?900:600,.05,'square',.06); noise(.03,.05);
 }
 function startBlackout(){
-  blackD=blackT=9+Math.random()*6; nextBlack=50+Math.random()*40; flashOn=true;
+  blackD=blackT=5+Math.random()*18; nextBlack=22+Math.random()*95; flashOn=true;
   try{ tone(80,.6,'sawtooth',.14,35); noise(.25,.14); }catch(e){}
   banner('MẤT ĐIỆN!\nDùng đèn pin (F) — manh mối vẫn phát sáng',3200);
 }
@@ -1997,6 +1997,31 @@ const handFingers=[], handRoots=[];
     const cf=new THREE.Mesh(new THREE.CylinderGeometry(.041,.047,.13,14),cuff); cf.rotation.x=Math.PI/2; cf.position.z=.15; h.add(cf);
   });
 })();
+// ---------- Tay cầm đèn pin (hiện khi bật đèn, hạ xuống khi tắt) ----------
+const flashG=new THREE.Group(); flashG.visible=false; camera.add(flashG); let flashAmt=0;
+(function(){
+  const skin=new THREE.MeshStandardMaterial({color:0xd6a083,roughness:.65,emissive:0x40201a}),
+        metal=new THREE.MeshStandardMaterial({color:0x2b2d33,roughness:.4,metalness:.7,emissive:0x0c0c0f}),
+        cuff=new THREE.MeshStandardMaterial({color:0x34373f,roughness:1,emissive:0x0d0e11}),
+        lens=new THREE.MeshBasicMaterial({color:0xfff2c8});
+  const g=new THREE.Group(); g.position.set(.25,-.27,-.5); g.rotation.set(.05,.14,-.03); flashG.add(g);
+  const cy=(r0,r1,len,m,z)=>{const c=new THREE.Mesh(new THREE.CylinderGeometry(r1,r0,len,14),m); c.rotation.x=Math.PI/2; c.position.z=z; g.add(c); return c;};
+  cy(.03,.03,.2,metal,0);                    // thân đèn
+  cy(.034,.034,.012,metal,-.06);              // vòng nối đầu đèn
+  cy(.034,.05,.075,metal,-.135);              // đầu đèn loe ra
+  cy(.043,.043,.006,lens,-.174);              // mặt kính phát sáng
+  cy(.026,.026,.022,metal,.11);               // đuôi đèn
+  // bàn tay nắm quanh thân đèn: 4 ngón (vòng cung) + ngón cái
+  for(let i=0;i<4;i++){
+    const t=new THREE.Mesh(new THREE.TorusGeometry(.04,.0125,6,12,Math.PI*1.5),skin);
+    t.position.z=.065-i*.026; t.rotation.z=Math.PI*.9; g.add(t);
+  }
+  const palm=new THREE.Mesh(new THREE.BoxGeometry(.05,.06,.105),skin); palm.position.set(-.032,-.01,.012); g.add(palm);
+  const thumb=new THREE.Mesh(new THREE.CylinderGeometry(.011,.013,.07,8),skin); thumb.rotation.x=Math.PI/2; thumb.position.set(.012,.04,-.03); g.add(thumb);
+  // cổ tay + ống tay áo kéo xuống góc dưới màn hình
+  const wr=new THREE.Mesh(new THREE.CylinderGeometry(.03,.034,.12,12),skin); wr.rotation.x=1.15; wr.position.set(-.04,-.075,.115); g.add(wr);
+  const cf=new THREE.Mesh(new THREE.CylinderGeometry(.05,.058,.16,14),cuff); cf.rotation.x=1.15; cf.position.set(-.05,-.14,.2); g.add(cf);
+})();
 const easeIO=x=>x<=0?0:x>=1?1:x*x*(3-2*x);
 function introBegin(){
   intro.on=true; intro.e=0; handsG.visible=false; $('lids').style.display='block'; $('skiph').style.display='block'; $('hud').style.display='none';
@@ -2046,6 +2071,7 @@ function wardDoors(sp,open){
 }
 function update(dt){
   tt+=dt;
+  if(state!=='play'){flashG.visible=false;flashAmt=0;}
   stormUpdate(dt); pulseClues(); rainUpdate();
   const inMenu=(state==='menu');
   if(room) room.visible=!inMenu;
@@ -2137,8 +2163,8 @@ function update(dt){
     evT-=dt; if(evT<=0){evT=12+Math.random()*14;tone(rnd(110,240),.8,'sawtooth',.04,rnd(60,100)); if(Math.random()<.6)whisper();}
   }
   if(!modalOpen&&!transitioning&&!intro.on){
-    if(blackT>0){ blackT-=dt; if(ghostOn||blackT<=0) endBlackout(); }
-    else if(!ghostOn){ nextBlack-=dt; if(nextBlack<=0){ if(ghostTimer>14) startBlackout(); else nextBlack=6; } }
+    if(blackT>0){ blackT-=dt; if(blackT<=0) endBlackout(); }
+    else { nextBlack-=dt; if(nextBlack<=0) startBlackout(); }
   }
   hbT-=dt;
   if(hbT<=0){
@@ -2164,7 +2190,9 @@ function update(dt){
   ambL.intensity=blackT>0?(.02+flashV*.35):(.6*(1-dark*.7)+flashV*1.2);
   lamp.intensity=.8*lampF; lampB.intensity=.65*lampF;
   if(flameMat){const v=Math.max(blackT>0?.04:.15,lampF);flameMat.color.setRGB(v,.85*v,.63*v);}
-  if(!hidden) spot.intensity=flashOn&&!intro.on?(blackT>0?3.8:1.5)*(0.96+0.04*Math.sin(tt*23))*(ghostOn?.5:1):0;
+  if(!hidden) spot.intensity=flashOn&&!intro.on?(blackT>0?3.8:1.5)*(0.96+0.04*Math.sin(tt*23))*(ghostOn&&blackT<=0?.5:1):0;
+  flashAmt+=((flashOn&&!hidden&&!intro.on)?1-flashAmt:-flashAmt)*Math.min(1,dt*10);
+  flashG.visible=flashAmt>.03; flashG.position.set(Math.sin(bob*.5)*.006,-(1-flashAmt)*.4+Math.abs(Math.sin(bob))*.005*(moving?1:0),0);
 
   updGhost(dt);
 }
