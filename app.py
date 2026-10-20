@@ -777,7 +777,7 @@ function stormUpdate(dt){
       :(e<.07?1:e<.13?.12:e<.24?.95:e<.34?.25:e<.46?.6:Math.max(0,.55*(1-(e-.46)/.54)));
   } else flashV=0;
   if(thunderIn>-100){thunderIn-=dt; if(thunderIn<=0){thunderIn=-999; thunder(thunderNear);}}
-  stormL.intensity=flashV*(blackT>0?.6:3);
+  stormL.intensity=flashV*3;
   stAcc+=dt;
   if(stAcc>(flashV>0?.016:.05)){drawStorm(stAcc); stAcc=0; stTex.needsUpdate=true;}
 }
@@ -1659,7 +1659,7 @@ function toggleFlash(){
   flashOn=!flashOn; tone(flashOn?900:600,.05,'square',.06); noise(.03,.05);
 }
 function startBlackout(){
-  blackD=blackT=5+Math.random()*18; nextBlack=22+Math.random()*95; flashOn=true;
+  blackD=blackT=35+Math.random()*50; nextBlack=60+Math.random()*90;   // mất điện ~60 giây (35-85) flashOn=true;
   try{ tone(80,.6,'sawtooth',.14,35); noise(.25,.14); }catch(e){}
   banner('MẤT ĐIỆN!\nDùng đèn pin (F) — manh mối vẫn phát sáng',3200);
 }
@@ -2187,7 +2187,7 @@ function update(dt){
   if(boltT>0&&(1-boltT)<.22) lampF=Math.min(lampF,RF?.45:.04);
   let bf=1;
   if(blackT>0){ const el=blackD-blackT; bf=(!RF&&(el<.6||blackT<.8))?(Math.random()<.35?1:0):0; lampF*=bf; }
-  ambL.intensity=blackT>0?(.02+flashV*.35):(.6*(1-dark*.7)+flashV*1.2);
+  ambL.intensity=blackT>0?(.02+flashV*1.2):(.6*(1-dark*.7)+flashV*1.2);
   lamp.intensity=.8*lampF; lampB.intensity=.65*lampF;
   if(flameMat){const v=Math.max(blackT>0?.04:.15,lampF);flameMat.color.setRGB(v,.85*v,.63*v);}
   if(!hidden) spot.intensity=flashOn&&!intro.on?(blackT>0?3.8:1.5)*(0.96+0.04*Math.sin(tt*23))*(ghostOn&&blackT<=0?.5:1):0;
