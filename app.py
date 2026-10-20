@@ -196,6 +196,16 @@ EXTRA_QUESTIONS = [
     {"q": "Cái gì màu đen khi mua, màu đỏ khi dùng, màu xám khi bỏ đi?", "a": "Than củi", "w": ["Cái ô", "Quyển sách", "Con mèo"], "hint": "Dùng để nhóm bếp lò."},
     {"q": "Cái gì có nhiều thành phố, nhiều sông nhưng không có nhà và không có nước?", "a": "Bản đồ", "w": ["Quả trứng", "Cái nón", "Cây bút"], "hint": "Bạn dùng nó để tìm đường."},
     {"q": "Cái gì càng được thắp lên thì càng ngắn lại?", "a": "Cây nến", "w": ["Cái đèn pin", "Bóng đèn", "Mặt trăng"], "hint": "Nó tan chảy khi cháy."},
+    {"q": "Bánh gì nghe tên đã thấy sung sướng?", "a": "Bánh khoái", "w": ["Bánh bò", "Bánh cuốn", "Bánh xèo"], "hint": "Một loại bánh có nguồn gốc từ Huế."},
+    {"q": "Bánh gì nghe tên đã thấy đau?", "a": "Bánh tét", "w": ["Bánh chưng", "Bánh giò", "Bánh ít"], "hint": "Thường gói bằng lá chuối, ăn vào dịp Tết miền Nam."},
+    {"q": "Thứ gì mỗi ngày phải gỡ ra mới có công dụng?", "a": "Lịch treo tường", "w": ["Cuộn băng keo", "Quyển vở", "Cái khăn"], "hint": "Mỗi ngày bạn xé một tờ."},
+    {"q": "Cái gì luôn chạy không chờ ta bao giờ, nhưng chúng ta vẫn có thể đứng một chỗ để chờ nó?", "a": "Đồng hồ", "w": ["Con tàu", "Dòng sông", "Chiếc xe buýt"], "hint": "Kim của nó luôn quay."},
+    {"q": "Con gì biết đi nhưng người ta vẫn nói nó không biết đi?", "a": "Con bò", "w": ["Con cua", "Con rùa", "Con ốc sên"], "hint": "Nghĩ đến câu nói quen thuộc về một con vật hay bị chê ngốc."},
+    {"q": "Xe nào không bao giờ giảm đi?", "a": "Xe tăng", "w": ["Xe đạp", "Xe lửa", "Xe buýt"], "hint": "Từ \"tăng\" trái nghĩa với \"giảm\"."},
+    {"q": "Cái gì khi xài thì quăng đi, nhưng khi không xài thì lấy lại?", "a": "Mỏ neo và lưỡi câu", "w": ["Cái ô và áo mưa", "Cái lưới và cái rổ", "Dây thừng và cái xô"], "hint": "Hai vật dụng liên quan đến nước."},
+    {"q": "Ở đâu một con voi có thể ăn một cái xe?", "a": "Cờ tướng", "w": ["Sở thú", "Cờ vua", "Rạp xiếc"], "hint": "Trên bàn có hai bên đối đầu, quân cờ có chữ."},
+    {"q": "Cây nhang càng đốt càng ngắn. Vậy cây gì càng đốt nhiều càng dài?", "a": "Cây tre, cây trúc", "w": ["Cây nến", "Cây bút chì", "Cây đuốc"], "hint": "Hãy nghĩ đến chữ \"đốt\" trên thân cây."},
+    {"q": "Hạt đường và hạt cát, hạt nào dài hơn?", "a": "Hạt đường", "w": ["Hạt cát", "Bằng nhau", "Không so sánh được"], "hint": "Đếm số chữ cái trong từ."},
 ]
 
 
