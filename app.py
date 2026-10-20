@@ -283,6 +283,10 @@ GAME_HTML = r"""
   #warn{z-index:25}
   .chk{display:flex;align-items:center;gap:10px;justify-content:center;margin:14px 0;color:#e0d6c0;font-size:16px;cursor:pointer}
   .chk input{width:20px;height:20px;accent-color:#b3141a;cursor:pointer}
+  #lids{position:absolute;inset:0;display:none;pointer-events:none;z-index:11}
+  .lid{position:absolute;left:-3%;right:-3%;height:50%;background:#000;box-shadow:0 0 70px 36px #000}
+  .lt{top:0;border-radius:0 0 50% 50%/0 0 34px 34px}.lb{bottom:0;border-radius:50% 50% 0 0/34px 34px 0 0}
+  #skiph{position:absolute;bottom:14px;right:18px;z-index:13;font-size:12px;color:#9a8a78;opacity:.45;display:none;pointer-events:none;letter-spacing:1px}
   #fade{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none;transition:opacity .8s;z-index:12}
   #scare{position:absolute;inset:0;width:100%;height:100%;display:none;pointer-events:none;z-index:10;image-rendering:pixelated}
   #hide{position:absolute;inset:0;display:none;pointer-events:none;z-index:4}
@@ -351,6 +355,7 @@ GAME_HTML = r"""
 <canvas id="scare" width="640" height="360"></canvas>
 <div id="flash"></div>
 <div id="bars"></div>
+<div id="lids"><div class="lid lt"></div><div class="lid lb"></div></div><div id="skiph">Enter · bỏ qua</div>
 <div id="fade"></div>
 
 <div id="modal"><div id="box">
@@ -1415,7 +1420,8 @@ function startRoom(){
   solved=[false,false,false]; buildRoom(); hidden=false; spot.intensity=2.1; $('hide').style.display='none';
   camera.position.set(0,1.6,RD/2-2); yaw=0; pitch=0; lampF=1; dark=0; parkGhost();
   ghostTimer=(door===0?38:28)+Math.random()*24; updateHud();
-  banner('CỬA '+(door+1)+': '+DOORS[door].name+'\n'+DOORS[door].intro,4500);
+  const rb=['CỬA '+(door+1)+': '+DOORS[door].name+'\n'+DOORS[door].intro,4500];
+  if(introWant){ introWant=false; introSnd=0; introBegin(); intro.banner=rb; } else banner(rb[0],rb[1]);
 }
 let inStory=false, storyTm=[];
 function storyStop(){storyTm.forEach(clearTimeout); storyTm=[];}
@@ -1430,7 +1436,8 @@ function storyIntro(){            // bảng cốt truyện: tắt nhạc, hiệu
 }
 function showOnly(id){['menu','story','howto','settings','over','win'].forEach(i=>$(i).style.display=(i===id?'flex':'none'));
   inStory=(id==='story'); if(inStory) storyIntro(); else storyStop();}
-function resetGame(){musicStop();hp=MAX_HP;hints=HINTS0;door=0;hintShown={};state='play';ambience();playMusicStart();
+let introWant=false;
+function resetGame(){introWant=true;musicStop();hp=MAX_HP;hints=HINTS0;door=0;hintShown={};state='play';ambience();playMusicStart();
   camera.fov=72;camera.updateProjectionMatrix();$('scare').style.display='none';
   showOnly(''); startRoom(); syncLock();}
 function toMenu(){playMusicStop();state='menu';closeModal(true);syncLock();parkGhost();showOnly('menu');buildRoom();camera.position.set(0,1.6,RD/2-2);yaw=0;pitch=0;musicStart();}
@@ -1693,6 +1700,7 @@ addEventListener('keydown',e=>{
   }
   if((e.code==='ShiftLeft'||e.code==='ShiftRight')&&!e.repeat){ if(state==='play'&&!transitioning) toggleSL(); return; }
   keys[e.code]=true;
+  if(intro.on){ if(e.code==='Enter') introEnd(); return; }   // đang tỉnh dậy: khóa điều khiển, Enter để bỏ qua
   if(e.code==='KeyE'&&state==='play'&&!transitioning) act();
   if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code)) e.preventDefault();
 });
@@ -1828,6 +1836,62 @@ function menuBg(dt,on){
     g.moveTo(r.x*w,r.y*h); g.lineTo(r.x*w-r.l*w*.12,(r.y+r.l)*h); });
   g.stroke();
 }
+// ---------- Cảnh mở đầu kiểu Granny: mở mắt (mờ) -> chớp mắt -> nhìn đôi bàn tay -> từ từ ngồi dậy ----------
+const intro={on:false,e:0,banner:null,hb:null}, INTRO_DUR=10.6;
+const handsG=new THREE.Group(); handsG.visible=false; handsG.position.set(0,-.3,-.55); camera.add(handsG);
+const handFingers=[];
+(function(){
+  const skin=new THREE.MeshStandardMaterial({color:0xc58f74,roughness:.8,emissive:0x2e1911}), cuff=new THREE.MeshStandardMaterial({color:0x30343c,roughness:1,emissive:0x0c0d10});
+  [-1,1].forEach(side=>{
+    const h=new THREE.Group(); h.position.x=side*.17; h.rotation.set(-.32,-side*.18,side*.06);
+    h.add(new THREE.Mesh(new THREE.BoxGeometry(.085,.022,.095),skin));
+    for(let i=0;i<4;i++){ const pv=new THREE.Group(); pv.position.set(-.0315+i*.021,0,-.047);
+      const f=new THREE.Mesh(new THREE.BoxGeometry(.017,.017,.07-(i===3?.012:0)),skin); f.position.z=-.035; pv.add(f); h.add(pv); handFingers.push({pv,i,side}); }
+    const th=new THREE.Group(); th.position.set(-side*.045,0,-.01); th.rotation.y=side*.75; const tm=new THREE.Mesh(new THREE.BoxGeometry(.017,.017,.05),skin); tm.position.z=-.025; th.add(tm); h.add(th);
+    const cf=new THREE.Mesh(new THREE.CylinderGeometry(.034,.04,.12,10),cuff); cf.rotation.x=Math.PI/2; cf.position.z=.11; h.add(cf);
+    handsG.add(h);
+  });
+})();
+const easeIO=x=>x<=0?0:x>=1?1:x*x*(3-2*x);
+function introBegin(){
+  intro.on=true; intro.e=0; handsG.visible=false; $('lids').style.display='block'; $('skiph').style.display='block'; $('hud').style.display='none';
+  $('c').style.filter='blur(10px)'; setLids(0);
+  try{ noise(.8,.04); }catch(e){}
+  let n=0; clearInterval(intro.hb);
+  intro.hb=setInterval(()=>{ if(!intro.on||++n>7){clearInterval(intro.hb);return;}      // tiếng tim đập
+    try{ tone(52,.16,'sine',.3,36); setTimeout(()=>{try{tone(46,.14,'sine',.2,34);}catch(e){}},190);}catch(e){} },900);
+}
+function setLids(o){
+  const l=$('lids'); if(o>=.995){ l.style.display='none'; return; } l.style.display='block';
+  const h=((1-o)*50).toFixed(2)+'%'; l.children[0].style.height=h; l.children[1].style.height=h;
+}
+function introEnd(){
+  if(!intro.on) return; intro.on=false; clearInterval(intro.hb);
+  handsG.visible=false; $('lids').style.display='none'; $('skiph').style.display='none'; $('c').style.filter=''; $('hud').style.display='';
+  if(intro.banner){ banner(intro.banner[0],intro.banner[1]); intro.banner=null; }
+}
+let introSnd=0;
+function introUpdate(dt){
+  const e=(intro.e+=dt);
+  // mí mắt: nhắm -> hé từ từ -> chớp -> mở hẳn
+  let o; if(e<.9)o=0; else if(e<2.6)o=.8*easeIO((e-.9)/1.7); else if(e<3.1)o=.8*(1-easeIO((e-2.6)/.5)*.92); else if(e<3.9)o=.064+.936*easeIO((e-3.1)/.8); else o=1;
+  setLids(o);
+  $('c').style.filter='blur('+Math.max(0,9*(1-easeIO((e-1.2)/4.4))).toFixed(1)+'px)';
+  // camera: nằm nhìn trần -> quay xuống nhìn tay -> ngồi dậy
+  const sit=easeIO((e-6.4)/3.7);
+  let pitchT = e<3.2 ? 1.0+Math.sin(e*.9)*.06 : (e<5.4 ? 1.0+(-.5-1.0)*easeIO((e-3.2)/2.2) : -.5);
+  if(e>=6.4) pitchT=-.5*(1-sit);
+  pitch=pitchT; yaw=Math.sin(e*.55)*.07*(1-sit);
+  camera.position.y=.42+(1.6-.42)*sit+Math.sin(e*1.7)*.008*(1-sit)+Math.sin(e*3.1)*.012*sit*(1-sit)*4;
+  // đôi tay: hiện lên trước mặt, nắm mở ngón tay, rồi hạ xuống khi ngồi dậy
+  handsG.visible=e>3.4&&e<8.4;
+  const up=easeIO((e-3.4)/1.2)*(1-easeIO((e-6.6)/1.6));
+  handsG.position.y=-.62+(.62-.2)*up; handsG.position.z=-.55;
+  handFingers.forEach(f=>{ f.pv.rotation.x=-.18-.28*(.5+.5*Math.sin(e*2.3+f.i*.7+(f.side>0?.6:0))); });
+  if(e>3.1&&introSnd<1){introSnd=1; try{noise(.35,.05);}catch(x){}}           // hít vào lúc chớp mắt
+  if(e>6.4&&introSnd<2){introSnd=2; try{noise(.9,.06); tone(70,.5,'sine',.05,50);}catch(x){}}   // tiếng vải sột soạt lúc ngồi dậy
+  if(e>=INTRO_DUR) introEnd();
+}
 // Trốn trong tủ: hai cánh cửa 3D trước đây che kín tầm nhìn (camera nằm trong tủ) -> khi trốn, hé hai cánh ra tạo khe hở thật để thấy phòng bên ngoài
 function wardDoors(sp,open){
   if(!sp||!sp.doors) return; const [l,r,m]=sp.doors, g=open?.09:0;
@@ -1857,7 +1921,7 @@ function update(dt){
     yaw-=f(mouseX)*2.6*dt; pitch=Math.max(-1.3,Math.min(1.3,pitch-f(mouseY)*1.6*dt));
   }
   let moving=false;
-  if(!modalOpen&&!hidden&&!transitioning){
+  if(!modalOpen&&!hidden&&!transitioning&&!intro.on){
     let f=0,s=0;
     if(keys.KeyW||keys.ArrowUp)f++; if(keys.KeyS||keys.ArrowDown)f--; if(keys.KeyD)s++; if(keys.KeyA)s--;
     if(touchMode&&joyId!==null){f-=joy.y; s+=joy.x;}
@@ -1881,6 +1945,7 @@ function update(dt){
     else { yaw=Math.max(curSpot.yaw-.75,Math.min(curSpot.yaw+.75,yaw)); pitch=Math.max(-.35,Math.min(.4,pitch)); }
   }
   if(!hidden) camera.position.y=1.6+(moving?Math.sin(bob)*0.04:0);
+  if(intro.on) introUpdate(dt);
   if(doorOpen){ if(doorPivot.rotation.y<1.9) doorPivot.rotation.y=Math.min(1.9,doorPivot.rotation.y+dt*1.5);
     doorLight.intensity=Math.min(1.8,doorLight.intensity+dt*1.5); }
 
@@ -1896,7 +1961,7 @@ function update(dt){
   // tương tác
   cur=null; let txt='';
   if(hidden){ txt=gh.phase==='idle'?'[E] Ra khỏi chỗ trốn':'Đừng cử động...'; }
-  else if(!modalOpen&&!transitioning){
+  else if(!modalOpen&&!transitioning&&!intro.on){
     const px=camera.position.x,pz=camera.position.z; let best=99;
     for(const o of inter){
       if(o.kind==='clue'&&solved[o.idx]) continue;
