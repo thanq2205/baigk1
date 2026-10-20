@@ -196,21 +196,10 @@ EXTRA_QUESTIONS = [
     {"q": "Cái gì màu đen khi mua, màu đỏ khi dùng, màu xám khi bỏ đi?", "a": "Than củi", "w": ["Cái ô", "Quyển sách", "Con mèo"], "hint": "Dùng để nhóm bếp lò."},
     {"q": "Cái gì có nhiều thành phố, nhiều sông nhưng không có nhà và không có nước?", "a": "Bản đồ", "w": ["Quả trứng", "Cái nón", "Cây bút"], "hint": "Bạn dùng nó để tìm đường."},
     {"q": "Cái gì càng được thắp lên thì càng ngắn lại?", "a": "Cây nến", "w": ["Cái đèn pin", "Bóng đèn", "Mặt trăng"], "hint": "Nó tan chảy khi cháy."},
-    {"q": "Bánh gì nghe tên đã thấy sung sướng?", "a": "Bánh khoái", "w": ["Bánh bò", "Bánh cuốn", "Bánh xèo"], "hint": "Một loại bánh có nguồn gốc từ Huế."},
-    {"q": "Bánh gì nghe tên đã thấy đau?", "a": "Bánh tét", "w": ["Bánh chưng", "Bánh giò", "Bánh ít"], "hint": "Thường gói bằng lá chuối, ăn vào dịp Tết miền Nam."},
-    {"q": "Thứ gì mỗi ngày phải gỡ ra mới có công dụng?", "a": "Lịch treo tường", "w": ["Cuộn băng keo", "Quyển vở", "Cái khăn"], "hint": "Mỗi ngày bạn xé một tờ."},
-    {"q": "Cái gì luôn chạy không chờ ta bao giờ, nhưng chúng ta vẫn có thể đứng một chỗ để chờ nó?", "a": "Đồng hồ", "w": ["Con tàu", "Dòng sông", "Chiếc xe buýt"], "hint": "Kim của nó luôn quay."},
-    {"q": "Con gì biết đi nhưng người ta vẫn nói nó không biết đi?", "a": "Con bò", "w": ["Con cua", "Con rùa", "Con ốc sên"], "hint": "Nghĩ đến câu nói quen thuộc về một con vật hay bị chê ngốc."},
-    {"q": "Xe nào không bao giờ giảm đi?", "a": "Xe tăng", "w": ["Xe đạp", "Xe lửa", "Xe buýt"], "hint": "Từ \"tăng\" trái nghĩa với \"giảm\"."},
-    {"q": "Cái gì khi xài thì quăng đi, nhưng khi không xài thì lấy lại?", "a": "Mỏ neo và lưỡi câu", "w": ["Cái ô và áo mưa", "Cái lưới và cái rổ", "Dây thừng và cái xô"], "hint": "Hai vật dụng liên quan đến nước."},
-    {"q": "Ở đâu một con voi có thể ăn một cái xe?", "a": "Cờ tướng", "w": ["Sở thú", "Cờ vua", "Rạp xiếc"], "hint": "Trên bàn có hai bên đối đầu, quân cờ có chữ."},
-    {"q": "Cây nhang càng đốt càng ngắn. Vậy cây gì càng đốt nhiều càng dài?", "a": "Cây tre, cây trúc", "w": ["Cây nến", "Cây bút chì", "Cây đuốc"], "hint": "Hãy nghĩ đến chữ \"đốt\" trên thân cây."},
-    {"q": "Hạt đường và hạt cát, hạt nào dài hơn?", "a": "Hạt đường", "w": ["Hạt cát", "Bằng nhau", "Không so sánh được"], "hint": "Đếm số chữ cái trong từ."},
 ]
 
 
 # 5 câu BẮT BUỘC: mỗi ván, mỗi phòng luôn có đúng 1 câu trong số này (phòng nào nhận câu nào là ngẫu nhiên).
-# 2 câu còn lại của mỗi phòng (tổng 10 câu) được bốc ngẫu nhiên từ kho gốc + EXTRA_QUESTIONS.
 FIXED_QUESTIONS = [
     {"q": "Alkene là gì?", "a": "Hydrocarbon mạch hở trong phân tử chứa 1 liên kết đôi", "w": ["Hydrocarbon mạch hở trong phân tử chứa 1 liên kết ba", "Hydrocarbon mạch vòng chứa liên kết đơn", "Hydrocarbon no mạch hở chỉ chứa liên kết đơn"], "hint": "Công thức chung CnH2n, có một liên kết C=C."},
     {"q": "Văn học trung đại xuất hiện ở thế kỷ nào?", "a": "Thế kỷ X - thế kỷ XIX", "w": ["Thế kỷ X - thế kỷ XV", "Thế kỷ XI - thế kỷ XIX", "Thế kỷ XV - thế kỷ XX"], "hint": "Kéo dài suốt gần 10 thế kỷ, bắt đầu từ thế kỷ X."},
@@ -219,9 +208,27 @@ FIXED_QUESTIONS = [
     {"q": "Từ đồng nghĩa với cụm từ \"run out of\" là gì?", "a": "have no more", "w": ["take care of", "look for", "full of"], "hint": "Nghĩa là hết, cạn kiệt."},
 ]
 
+# 10 câu BỔ SUNG, cũng luôn có trong mỗi ván: mỗi phòng nhận thêm 2 câu trong số này (ngẫu nhiên).
+BONUS_QUESTIONS = [
+    {"q": "Bánh gì nghe tên đã thấy sung sướng?", "a": "Bánh khoái", "w": ["Bánh bò", "Bánh cuốn", "Bánh xèo"], "hint": "Một loại bánh có nguồn gốc từ Huế."},
+    {"q": "Bánh gì nghe tên đã thấy đau?", "a": "Bánh tét", "w": ["Bánh chưng", "Bánh giò", "Bánh ít"], "hint": "Thường gói bằng lá chuối, ăn vào dịp Tết miền Nam."},
+    {"q": "Thứ gì mỗi ngày phải gỡ ra mới có công dụng?", "a": "Lịch treo tường", "w": ["Cuộn băng keo", "Quyển vở", "Cái khăn"], "hint": "Mỗi ngày bạn xé một tờ."},
+    {"q": "Cái gì luôn chạy không chờ ta bao giờ, nhưng chúng ta vẫn có thể đứng một chỗ để chờ nó?", "a": "Đồng hồ", "w": ["Con tàu", "Dòng sông", "Chiếc xe buýt"], "hint": "Kim của nó luôn quay."},
+    {"q": "Con gì biết đi nhưng người ta vẫn nói nó không biết đi?", "a": "Con bò", "w": ["Con cua", "Con rùa", "Con ốc sên"], "hint": "Nghĩ đến câu nói quen thuộc về một con vật hay bị chê ngốc."},
+    {"q": "Xe nào không bao giờ giảm đi?", "a": "Xe tăng", "w": ["Xe đạp", "Xe lửa", "Xe buýt"], "hint": "Từ \"tăng\" trái nghĩa với \"giảm\"."},
+    {"q": "Cái gì khi xài thì quăng đi, nhưng khi không xài thì lấy lại?", "a": "Mỏ neo và lưỡi câu", "w": ["Cái ô và áo mưa", "Cái lưới và cái rổ", "Dây thừng và cái xô"], "hint": "Hai vật dụng liên quan đến nước."},
+    {"q": "Trong tám nhóm máu chính, nhóm máu nào hiếm nhất trên toàn thế giới?", "a": "Nhóm máu AB âm tính", "w": ["Nhóm máu O dương tính", "Nhóm máu A âm tính", "Nhóm máu B âm tính"], "hint": "Có cả hai kháng nguyên A, B nhưng không có yếu tố Rh."},
+    {"q": "Các xương nhỏ nhất nằm ở đâu trong cơ thể người?", "a": "Tai giữa", "w": ["Bàn tay", "Bàn chân", "Cột sống"], "hint": "Chúng giúp truyền âm thanh để ta nghe được."},
+    {"q": "Một người trưởng thành bình thường có bao nhiêu răng, bao gồm cả răng khôn?", "a": "32 chiếc", "w": ["28 chiếc", "30 chiếc", "36 chiếc"], "hint": "Không tính răng khôn thì là 28."},
+]
+
 
 def build_fixed() -> str:
     return json.dumps([{"q": q["q"], "o": [q["a"]] + q["w"], "hint": q["hint"]} for q in FIXED_QUESTIONS], ensure_ascii=False)
+
+
+def build_bonus() -> str:
+    return json.dumps([{"q": q["q"], "o": [q["a"]] + q["w"], "hint": q["hint"]} for q in BONUS_QUESTIONS], ensure_ascii=False)
 
 
 def build_pool() -> str:
@@ -512,7 +519,7 @@ GAME_HTML = r"""
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 (function(){
-const DOORS_BASE = __DATA__, EXTRA_Q = __POOL__, FIXED_Q = __FIXED__;
+const DOORS_BASE = __DATA__, EXTRA_Q = __POOL__, FIXED_Q = __FIXED__, BONUS_Q = __BONUS__;
 const QPOOL = [].concat.apply([], DOORS_BASE.map(d=>d.questions)).concat(EXTRA_Q);
 let DOORS = DOORS_BASE;
 let layoutOrder=[0,1,2,3,4], wallOrder=[0,1,2,3,4], mirrorArr=[1,-1,1,-1,1], gameSeed=17;
@@ -521,10 +528,12 @@ function rollGame(){
   layoutOrder=shuffle([0,1,2,3,4]); wallOrder=shuffle([0,1,2,3,4]); mirrorArr=[0,1,2,3,4].map(()=>Math.random()<.5?1:-1); gameSeed=Math.floor(Math.random()*1e6);
   const pool=shuffle(QPOOL.map((_,i)=>i)); let p=0;
   const fixed=shuffle(FIXED_Q.slice());   // 5 câu bắt buộc: mỗi phòng 1 câu, phòng nhận câu nào là ngẫu nhiên
+  const bonus=shuffle(BONUS_Q.slice());   // 10 câu bổ sung: mỗi phòng 2 câu
   DOORS=[0,1,2,3,4].map(i=>{
     const base=DOORS_BASE[layoutOrder[i]];
-    const picks=[0,1].map(()=>QPOOL[pool[p++%pool.length]]);          // 2 câu ngẫu nhiên
-    if(fixed.length) picks.push(fixed[i%fixed.length]);               // + 1 câu bắt buộc
+    const picks=[];                                                   // mỗi phòng 3 câu: 1 câu bắt buộc + 2 câu bổ sung (thiếu mới bốc ngẫu nhiên)
+    if(fixed.length) picks.push(fixed.pop());
+    while(picks.length<3) picks.push(bonus.length?bonus.pop():QPOOL[pool[p++%pool.length]]);
     const questions=shuffle(picks).map(q=>({q:q.q,o:q.o,hint:q.hint,digit:Math.floor(Math.random()*10)}));   // xáo vị trí chìa 1/2/3
     const order=shuffle([0,1,2]);
     return {name:base.name,intro:base.intro,order,order_text:'Ghép chìa '+order.map(k=>k+1).join(' → chìa ')+'.',questions};
@@ -2367,6 +2376,7 @@ MENU_BG = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAUEBAQEAwUEBA
 _html = (GAME_HTML.replace("__DATA__", build_data())
          .replace("__POOL__", build_pool())
          .replace("__FIXED__", build_fixed())
+         .replace("__BONUS__", build_bonus())
          .replace("__MENUBG__", MENU_BG)
          .replace("__MUSIC__", load_mp3(MUSIC_FILE, PLAY_MUSIC_FILE, True))
          .replace("__MUSIC2__", load_mp3(PLAY_MUSIC_FILE))
