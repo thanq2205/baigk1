@@ -1487,7 +1487,7 @@ $('mi').addEventListener('keydown',e=>{if(e.key==='Enter')submit();});
 // ---------- Luồng game ----------
 function startRoom(){
   solved=[false,false,false]; buildRoom(); hidden=false; spot.intensity=2.1; $('hide').style.display='none';
-  camera.position.set(0,1.6,RD/2-2); yaw=0; pitch=0; lampF=1; dark=0; blackT=0; nextBlack=40+Math.random()*30; flashOn=true; parkGhost();
+  camera.position.set(0,1.6,RD/2-2); yaw=0; pitch=0; lampF=1; dark=0; blackT=0; nextBlack=40+Math.random()*30; flashOn=true; shDur=0; shadowG.visible=false; nextShadow=25+Math.random()*50; parkGhost();
   ghostTimer=(door===0?38:28)+Math.random()*24; updateHud();
   const rb=['CỬA '+(door+1)+': '+DOORS[door].name+'\n'+DOORS[door].intro,4500];
   if(introWant){ introWant=false; introSnd=0; introBegin(); intro.banner=rb; } else banner(rb[0],rb[1]);
@@ -2022,6 +2022,44 @@ const flashG=new THREE.Group(); flashG.visible=false; camera.add(flashG); let fl
   const wr=new THREE.Mesh(new THREE.CylinderGeometry(.03,.034,.12,12),skin); wr.rotation.x=1.15; wr.position.set(-.04,-.075,.115); g.add(wr);
   const cf=new THREE.Mesh(new THREE.CylinderGeometry(.05,.058,.16,14),cuff); cf.rotation.x=1.15; cf.position.set(-.05,-.14,.2); g.add(cf);
 })();
+// ---------- Bóng đen thỉnh thoảng lướt ngang qua tầm nhìn ----------
+const shadowG=new THREE.Group(); shadowG.visible=false; scene.add(shadowG);
+const shBody=new THREE.Group(); shadowG.add(shBody);
+const shMat=new THREE.MeshBasicMaterial({color:0x020204,transparent:true,opacity:0,fog:false,depthWrite:false});
+const shEyeMat=new THREE.MeshBasicMaterial({color:0xe8eeff,transparent:true,opacity:0,fog:false});
+let shHead, shLegs=[], shArms=[];
+(function(){
+  const bx=(w,h,d,x,y,z,par)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),shMat); m.position.set(x,y,z); (par||shBody).add(m); return m;};
+  bx(.5,.78,.26,0,1.28,0);
+  shHead=new THREE.Group(); shHead.position.set(0,1.82,0); shBody.add(shHead);
+  const hd=new THREE.Mesh(new THREE.SphereGeometry(.14,12,10),shMat); hd.scale.set(.9,1.2,1); shHead.add(hd);
+  [-1,1].forEach(sx=>{const e=new THREE.Mesh(new THREE.SphereGeometry(.018,6,5),shEyeMat); e.scale.set(1.5,.8,.5); e.position.set(sx*.055,.03,.125); shHead.add(e);});
+  [-1,1].forEach(sx=>{ const lg=new THREE.Group(); lg.position.set(sx*.13,.9,0); shBody.add(lg); bx(.19,.9,.2,0,-.45,0,lg); shLegs.push(lg);
+    const ar=new THREE.Group(); ar.position.set(sx*.33,1.6,0); shBody.add(ar); bx(.12,.8,.14,0,-.4,0,ar); shArms.push(ar); });
+})();
+let shDur=0, shT=0, shA=[0,0], shB=[0,0], nextShadow=30+Math.random()*60;
+function startShadow(){
+  nextShadow=35+Math.random()*80;
+  if(gh.phase!=='idle') return;
+  const f=[-Math.sin(yaw),-Math.cos(yaw)], r=[Math.cos(yaw),-Math.sin(yaw)], d=4.5+Math.random()*3.5, dir=Math.random()<.5?1:-1, sp=8;
+  const cx=camera.position.x+f[0]*d, cz=camera.position.z+f[1]*d;
+  shA=[cx-r[0]*sp*dir, cz-r[1]*sp*dir]; shB=[cx+r[0]*sp*dir, cz+r[1]*sp*dir];
+  shDur=1.1+Math.random()*.7; shT=0; shadowG.visible=true;
+  try{ tone(70,.9,'sine',.07,45); noise(.5,.04); }catch(e){}
+}
+function updShadow(dt){
+  if(shDur<=0) return;
+  if(hidden||gh.phase!=='idle'){shDur=0; shadowG.visible=false; return;}
+  shT+=dt; const k=shT/shDur;
+  if(k>=1){shDur=0; shadowG.visible=false; return;}
+  const lim=(a,m)=>Math.max(-m,Math.min(m,a));
+  const x=lim(shA[0]+(shB[0]-shA[0])*k,RW/2-.8), z=lim(shA[1]+(shB[1]-shA[1])*k,RD/2-.8);
+  shadowG.position.set(x,Math.abs(Math.sin(tt*11))*.05,z);
+  const mv=Math.atan2(shB[0]-shA[0],shB[1]-shA[1]); shBody.rotation.y=mv;
+  let hy=Math.atan2(camera.position.x-x,camera.position.z-z)-mv; hy=Math.atan2(Math.sin(hy),Math.cos(hy)); shHead.rotation.y=Math.max(-1.4,Math.min(1.4,hy));   // quay đầu nhìn người chơi
+  const sw=Math.sin(tt*14)*.7; shLegs[0].rotation.x=sw; shLegs[1].rotation.x=-sw; shArms[0].rotation.x=-sw*.8; shArms[1].rotation.x=sw*.8;
+  const a=Math.sin(Math.PI*k); shMat.opacity=.93*Math.min(1,a*3); shEyeMat.opacity=Math.min(1,a*3);
+}
 const easeIO=x=>x<=0?0:x>=1?1:x*x*(3-2*x);
 function introBegin(){
   intro.on=true; intro.e=0; handsG.visible=false; $('lids').style.display='block'; $('skiph').style.display='block'; $('hud').style.display='none';
@@ -2071,7 +2109,7 @@ function wardDoors(sp,open){
 }
 function update(dt){
   tt+=dt;
-  if(state!=='play'){flashG.visible=false;flashAmt=0;}
+  if(state!=='play'){flashG.visible=false;flashAmt=0;shDur=0;shadowG.visible=false;}
   stormUpdate(dt); pulseClues(); rainUpdate();
   const inMenu=(state==='menu');
   if(room) room.visible=!inMenu;
@@ -2165,7 +2203,9 @@ function update(dt){
   if(!modalOpen&&!transitioning&&!intro.on){
     if(blackT>0){ blackT-=dt; if(blackT<=0) endBlackout(); }
     else { nextBlack-=dt; if(nextBlack<=0) startBlackout(); }
+    if(!hidden){ if(shDur<=0){ nextShadow-=dt; if(nextShadow<=0) startShadow(); } }
   }
+  updShadow(dt);
   hbT-=dt;
   if(hbT<=0){
     if(ghostOn&&gh.phase!=='leave'){const dd=Math.hypot(gh.x-camera.position.x,gh.z-camera.position.z);
