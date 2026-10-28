@@ -257,6 +257,8 @@ GAME_HTML = r"""
 <html>
 <head>
 <meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap&subset=vietnamese" rel="stylesheet">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <style>
   html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000;font-family:'Times New Roman','Noto Serif',Georgia,serif;color:#eee;user-select:none}
@@ -396,6 +398,66 @@ GAME_HTML = r"""
   .touch #mu{padding:10px 14px;font-size:18px;right:104px}
   #rot{position:fixed;inset:0;z-index:99;background:#000;color:#d9b45a;display:none;align-items:center;justify-content:center;
        text-align:center;padding:20px;font-size:22px;letter-spacing:2px}
+
+  /* ================= GIAO DIỆN KINH DỊ (menu + các bảng) ================= */
+  :root{--blood:#b3141a;--blood2:#6a0a10;--bone:#c9bfae;--ink:#050203;--serif:'Cormorant Garamond','Times New Roman','Noto Serif',Georgia,serif;--disp:'Cinzel','Cormorant Garamond','Times New Roman',serif}
+  .ov{background:radial-gradient(ellipse at 50% 40%,rgba(34,7,9,.9),rgba(0,0,0,.985) 78%);font-family:var(--serif)}
+  .ov:not(#menu)::before{content:'';position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,.25) 0 1px,transparent 1px 3px)}
+  .ov h1{font-family:var(--serif);font-weight:700;text-shadow:0 0 22px rgba(160,10,18,.7),0 2px 2px #000}
+  .ov h1:after{content:'';display:block;width:120px;height:1px;margin:14px auto 0;background:linear-gradient(90deg,transparent,#8a1018,transparent)}
+  .ov p,.hw{font-family:var(--serif);font-size:16px}
+  .ov:not(#menu){justify-content:flex-start}.ov:not(#menu)>:first-child{margin-top:auto}.ov:not(#menu)>:last-child{margin-bottom:auto}
+  #howto .hw{font-size:15px}
+  .hw h3{font-family:var(--serif);font-weight:700;letter-spacing:.2em;text-transform:uppercase;font-size:16px;color:#c9a24a;border-bottom:1px solid rgba(150,30,36,.35);padding-bottom:4px}
+  .hw li{margin:3px 0}
+  .ov button{font-family:var(--serif);font-weight:700;text-transform:uppercase;letter-spacing:.2em;font-size:15px;color:#d8cdbd;
+    background:linear-gradient(#2a0709,#120304);border:1px solid rgba(170,30,38,.75);border-radius:2px;padding:11px 26px;
+    box-shadow:inset 0 0 12px rgba(0,0,0,.7);transition:background .25s,color .25s,box-shadow .25s,letter-spacing .25s}
+  .ov button:hover{background:linear-gradient(#6a1016,#2a0709);color:#fff;letter-spacing:.24em;box-shadow:0 0 16px rgba(200,15,25,.6),inset 0 0 12px rgba(0,0,0,.5)}
+  .ov .mb button{font-size:18px}
+  .ov input[type=range]{accent-color:var(--blood)}
+
+  /* ---- MENU CHÍNH: lệch trái, để lâu đài ma lộ ra bên phải ---- */
+  #menu{align-items:flex-start;justify-content:center;text-align:left;padding:0 0 0 128px;
+    background:linear-gradient(90deg,rgba(0,0,0,.94) 0%,rgba(0,0,0,.78) 30%,rgba(0,0,0,.2) 60%,rgba(0,0,0,.38) 100%),
+               radial-gradient(ellipse at 62% 52%,transparent 30%,rgba(0,0,0,.82) 100%)}
+  #menu::before{content:'';position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,.28) 0 1px,transparent 1px 3px)}
+  #menu::after{content:'';position:absolute;inset:0;pointer-events:none;background:#000;opacity:0;animation:mflick 13s infinite}
+  @keyframes mflick{0%,41%,46%,100%{opacity:0}42%{opacity:.5}43%{opacity:.05}44%{opacity:.6}45%{opacity:.1}}
+  .mn-eye{font-family:var(--serif);font-size:14px;font-weight:700;letter-spacing:.55em;color:#8a7a68;margin:0 0 6px 4px;display:flex;align-items:center;gap:14px;opacity:0;animation:mnin 1.2s ease .2s forwards}
+  .mn-eye:before{content:'';width:46px;height:1px;background:linear-gradient(90deg,transparent,#8a1018)}
+  .ttl{position:relative;display:inline-block}
+  #menu h1{font-family:var(--disp);font-weight:900;font-size:118px;line-height:1.02;letter-spacing:.17em;margin:0;position:relative;
+    background:linear-gradient(180deg,#ff4a44 0%,#c4151d 36%,#5c060c 78%,#260306 100%);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;
+    text-shadow:none;filter:drop-shadow(0 0 16px rgba(190,10,22,.55)) drop-shadow(0 4px 3px #000);animation:tflick 10s infinite,mnin 1.6s ease .1s backwards}
+  #menu h1:after{display:none}
+  #menu h1:before{content:attr(data-t);position:absolute;left:0;top:0;background:none;-webkit-text-fill-color:#7a0c12;opacity:0;clip-path:inset(0 0 100% 0);animation:tglitch 7s infinite}
+  @keyframes tflick{0%,52%,55%,60%,100%{opacity:1}53%{opacity:.55}54%{opacity:.9}56%{opacity:.4}57%{opacity:1}58%{opacity:.7}}
+  @keyframes tglitch{0%,86%,100%{opacity:0;clip-path:inset(0 0 100% 0);transform:none}87%{opacity:.9;clip-path:inset(18% 0 62% 0);transform:translateX(-7px)}89%{opacity:.9;clip-path:inset(60% 0 14% 0);transform:translateX(6px)}91%{opacity:0}}
+  .dr{position:absolute;top:79%;width:5px;height:0;border-radius:0 0 4px 4px;background:linear-gradient(#9a0f17,#4a0509);opacity:0;transform-origin:top;animation:drip 9s ease-in infinite;pointer-events:none}
+  .dr:after{content:'';position:absolute;left:-1px;bottom:-4px;width:7px;height:8px;border-radius:50%;background:#5a070d}
+  .d1{left:13%;animation-delay:.5s}.d2{left:34%;animation-delay:3.2s;animation-duration:11s}.d3{left:57%;animation-delay:6s}.d4{left:77%;animation-delay:1.8s;animation-duration:12s}.d5{left:92%;animation-delay:7.4s}
+  @keyframes drip{0%{height:0;opacity:0}6%{opacity:1;height:6px}48%{height:44px;opacity:1}72%{height:58px;opacity:.9}100%{height:64px;opacity:0;transform:translateY(24px)}}
+  .mn-sub{font-family:var(--serif);font-style:italic;font-size:22px;color:#8f8272;margin:8px 0 0 6px;letter-spacing:.06em;opacity:0;animation:mnin 1.4s ease .9s forwards}
+  #menu .mb{align-items:stretch;gap:0;margin-top:38px;width:360px}
+  #menu .mb button{position:relative;display:flex;align-items:baseline;gap:20px;width:100%;margin:0;text-align:left;
+    background:transparent;border:0;border-bottom:1px solid rgba(150,30,36,.3);border-radius:0;box-shadow:none;
+    padding:15px 18px 15px 14px;font-family:var(--serif);font-weight:700;font-size:25px;letter-spacing:.3em;color:#b7ab9b;
+    opacity:0;animation:mnin .9s ease forwards;transition:padding-left .3s,color .3s,background .3s,text-shadow .3s}
+  #menu .mb button:first-child{border-top:1px solid rgba(150,30,36,.3)}
+  #menu .mb button:nth-child(1){animation-delay:1.1s}#menu .mb button:nth-child(2){animation-delay:1.3s}#menu .mb button:nth-child(3){animation-delay:1.5s}
+  #menu .mb button .n{font-size:13px;letter-spacing:.1em;color:#7a1a20;min-width:22px;transition:color .3s}
+  #menu .mb button:before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:#d4121c;box-shadow:0 0 12px #e01a24;transform:scaleY(0);transition:transform .3s}
+  #menu .mb button:hover{padding-left:30px;color:#fff;letter-spacing:.3em;text-shadow:0 0 14px #e01a24;box-shadow:none;
+    background:linear-gradient(90deg,rgba(150,12,20,.55),rgba(60,4,8,.22) 65%,transparent)}
+  #menu .mb button:hover:before{transform:scaleY(1)}
+  #menu .mb button:hover .n{color:#ff4a44}
+  #menu #musichint{margin:22px 0 0 6px;font-style:italic;font-size:16px}
+  .mn-foot{position:absolute;left:128px;bottom:58px;font-family:var(--serif);font-size:13px;letter-spacing:.28em;text-transform:uppercase;color:#6c6258;opacity:0;animation:mnin 1.4s ease 2s forwards}
+  @keyframes mnin{from{opacity:0;transform:translateX(-18px);filter:blur(5px)}to{opacity:1;transform:none;filter:none}}
+  .rf #menu h1,.rf #menu h1:before,.rf .dr,.rf #menu::after{animation:none}
+  .rf #menu h1{opacity:1}
+  @media (prefers-reduced-motion:reduce){#menu h1,#menu h1:before,.dr,#menu::after{animation:none}#menu h1{opacity:1}}
 </style>
 </head>
 <body>
@@ -426,13 +488,16 @@ GAME_HTML = r"""
 </div></div>
 
 <div id="menu" class="ov" style="display:flex">
-  <h1>ESCAPE</h1>
+  <div class="mn-eye">NĂM CÁNH CỬA · MỘT LỐI THOÁT</div>
+  <div class="ttl"><h1 data-t="ESCAPE">ESCAPE</h1><i class="dr d1"></i><i class="dr d2"></i><i class="dr d3"></i><i class="dr d4"></i><i class="dr d5"></i></div>
+  <div class="mn-sub">Đừng để nó tìm thấy bạn…</div>
   <div class="mb">
-    <button id="start">CHƠI</button>
-    <button id="how">HƯỚNG DẪN</button>
-    <button id="settingsBtn">CÀI ĐẶT</button>
+    <button id="start"><span class="n">I</span><span>CHƠI</span></button>
+    <button id="how"><span class="n">II</span><span>HƯỚNG DẪN</span></button>
+    <button id="settingsBtn"><span class="n">III</span><span>CÀI ĐẶT</span></button>
   </div>
   <p id="musichint">Bấm vào bất kỳ đâu để bật nhạc</p>
+  <div class="mn-foot">Đeo tai nghe · Tắt đèn phòng</div>
 </div>
 
 <div id="settings" class="ov">
@@ -1632,7 +1697,7 @@ if(!inFrame&&location.hash==='#fromframe'&&window.opener){
     },150);
   }catch(e){}
 }
-function setRF(v){RF=!!v; saveNum('doors_rf',RF?1:0); $('rfchk2').checked=RF;}
+function setRF(v){RF=!!v; saveNum('doors_rf',RF?1:0); $('rfchk2').checked=RF; document.body.classList.toggle('rf',RF);}
 $('rfchk2').onchange=()=>setRF($('rfchk2').checked); setRF(RF);
 $('warnok').onclick=()=>{$('warn').style.display='none';};
 $('tomenu').onclick=toMenu; $('tomenu2').onclick=toMenu;
