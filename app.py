@@ -674,6 +674,7 @@ const lamp=new THREE.PointLight(0xffb066,1.1,24); scene.add(lamp);
 lamp.shadow.mapSize.set(512,512); lamp.shadow.camera.near=0.3; lamp.shadow.camera.far=24; lamp.shadow.bias=-0.003;
 const lampB=new THREE.PointLight(0xffb066,0.9,22); scene.add(lampB);
 const doorLight=new THREE.PointLight(0xfff1c9,0,10); scene.add(doorLight);
+const poolL=new THREE.PointLight(0xb01818,0,10); scene.add(poolL);   // ánh đỏ yếu từ vết nứt khi ma trồi lên
 const nextL=new THREE.PointLight(0xffd9a0,0,22), prevL=new THREE.PointLight(0xffc890,0,20); scene.add(nextL); scene.add(prevL);   // chiếu sáng phòng kề bên để nhìn xuyên ô cửa
 const sconceL=[0,1].map(()=>{const l=new THREE.PointLight(0xff9a40,1.0,9);scene.add(l);return l;});
 const clueL=[0,1,2].map(()=>{const l=new THREE.PointLight(0xffaa44,.9,5.5);scene.add(l);return l;});
@@ -1218,7 +1219,39 @@ function mkRibbons(strands,mat){      // dải ruy-băng mảnh (tóc, mảnh v�
   ghostRoot.traverse(o=>{if(o.material&&!seen.has(o.material)){seen.add(o.material);o.material.transparent=true;o.material.opacity=0;gMats.push(o.material);}});
   ghostRoot.scale.set(1.05,1.05,1.05);
 })();
-function parkGhost(){ ghostSoundStop();$('bars').className='';if(camera.fov!==72){camera.fov=72;camera.updateProjectionMatrix();}gh.phase='idle';gh.alpha=0;gh.peek=0;ghostRoot.position.set(0,-80,0);ghostRoot.rotation.x=0;gLight.intensity=0;}
+// ---------- Hiệu ứng ma trồi lên từ sàn: vết nứt + vũng tối loang ra, khói đen bốc lên, ánh đỏ chớp ----------
+const poolTex=new THREE.CanvasTexture(mkCan('pool',512,512,(g,w,h)=>{
+  const R=mulberry(77), gr=g.createRadialGradient(256,256,0,256,256,250);
+  gr.addColorStop(0,'rgba(2,0,0,1)'); gr.addColorStop(.4,'rgba(22,1,3,.98)'); gr.addColorStop(.72,'rgba(64,4,8,.6)'); gr.addColorStop(1,'rgba(64,4,8,0)');
+  g.fillStyle=gr; g.beginPath(); g.arc(256,256,250,0,7); g.fill();
+  g.lineCap='round'; g.lineJoin='round'; g.strokeStyle='rgba(0,0,0,.92)'; g.shadowColor='rgba(150,10,16,.9)'; g.shadowBlur=8;
+  for(let i=0;i<30;i++){
+    let a=R()*6.283, x=256+Math.cos(a)*40, y=256+Math.sin(a)*40; g.lineWidth=2+R()*3; g.beginPath(); g.moveTo(x,y);
+    const n=6+R()*8;
+    for(let k=0;k<n;k++){ a+=(R()-.5)*.9; const st=14+R()*18; x+=Math.cos(a)*st; y+=Math.sin(a)*st; g.lineTo(x,y); if(Math.hypot(x-256,y-256)>245) break; }
+    g.stroke();
+  }
+}));
+const poolMesh=new THREE.Mesh(new THREE.CircleGeometry(1,48),new THREE.MeshBasicMaterial({map:poolTex,transparent:true,opacity:0,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-4}));
+poolMesh.rotation.x=-Math.PI/2; poolMesh.visible=false; poolMesh.renderOrder=1; scene.add(poolMesh);
+const mist=[]; for(let i=0;i<14;i++){
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:haloTex(),color:0x2a2024,transparent:true,opacity:0,depthWrite:false}));
+  sp.visible=false; scene.add(sp); mist.push(sp);
+}
+gh.pool=0; gh.pe=0; gh.sink=0; gh.px=0; gh.pz=0;
+function riseFxUpdate(dt){
+  if(gh.phase==='reveal'){ gh.pe=gh.t0-gh.t; gh.pool=Math.min(1,gh.pe/1.0); }
+  else { gh.pe+=dt; gh.pool=Math.max(0,gh.pool-dt*.3); }
+  const a=gh.pool, q=Math.min(1,gh.pe/3.4), rs=.35+1.3*q*q*(3-2*q), fl=(gh.phase==='reveal'&&gh.pe<3.6)?(.85+.15*Math.random()):1;
+  poolMesh.visible=a>.01; poolMesh.position.set(gh.px,.04,gh.pz); poolMesh.scale.set(rs,rs,1); poolMesh.material.opacity=a*.95*fl;
+  poolL.position.set(gh.px,.6,gh.pz); poolL.intensity=a*(1.4+1.0*Math.random());
+  for(let i=0;i<mist.length;i++){
+    const m=mist[i], ph=((tt*.32+i*.37)%1), ang=i*2.4, r=(.25+ph*.9)*(.6+(i%3)*.25), sc=.9+ph*1.9;
+    m.visible=a>.02; m.position.set(gh.px+Math.cos(ang)*r,.1+ph*2.3,gh.pz+Math.sin(ang)*r); m.scale.set(sc,sc,1);
+    m.material.opacity=a*.5*Math.sin(Math.PI*ph);
+  }
+}
+function parkGhost(){ gh.pool=0; poolMesh.visible=false; poolL.intensity=0; mist.forEach(m=>{m.visible=false;}); ghostSoundStop();$('bars').className='';if(camera.fov!==72){camera.fov=72;camera.updateProjectionMatrix();}gh.phase='idle';gh.alpha=0;gh.peek=0;ghostRoot.position.set(0,-80,0);ghostRoot.rotation.x=0;gLight.intensity=0;}
 
 // ---------- Dựng phòng ----------
 const M=(c,e)=>new THREE.MeshStandardMaterial({color:c,roughness:.9,emissive:e||0x000000,side:THREE.DoubleSide});
@@ -2115,6 +2148,7 @@ function startBlackout(){
 function endBlackout(){ blackT=0; try{ tone(140,.3,'square',.06,260); }catch(e){} banner('Điện đã có lại.',1800); }
 function act(){
   if(hidden){toggleHide();return;}
+  if(gh.phase==='reveal') return;
   if(!cur) return;
   if(cur.kind==='hide') toggleHide(cur);
   else if(gh.phase!=='idle'){banner('Không phải lúc này! Hãy trốn đi!',1500);}
@@ -2133,16 +2167,29 @@ function startGhost(){
   banner('ĐÈN CHỚP… CÓ THỨ GÌ ĐÓ ĐANG TỚI!\nTRỐN NGAY: tủ hoặc gầm giường (E)',4600);
   tone(90,1.6,'sawtooth',.12,45);
 }
+// Tìm chỗ trống ngay trước mặt người chơi (6-7 m) để cảnh ma trồi lên nằm gọn trong tầm nhìn
+function spawnSpot(){
+  const cx=camera.position.x, cz=camera.position.z, ax=RW/2-1.6, az=RD/2-1.6;
+  const ok=(x,z)=>Math.abs(x)<ax&&Math.abs(z)<az&&!hit(x,z)&&!shapeBlocks.some(b=>x>b[0]-1.4&&x<b[1]+1.4&&z>b[2]-1.4&&z<b[3]+1.4);
+  for(const d of [6.5,5.5,4.8,7.5,4]) for(const off of [0,.35,-.35,.7,-.7]){
+    const an=yaw+off, x=cx-Math.sin(an)*d, z=cz-Math.cos(an)*d; if(ok(x,z)) return [x,z];
+  }
+  return null;
+}
 function ghostSpawn(){
-  // Ma hiện ra Ở XA người chơi: chọn điểm xa nhất trong phòng (giữa 4 cạnh + 4 góc). Người chơi vẫn đi lại bình thường.
-  const ax=RW/2-2.5, az=RD/2-2.5;
-  const c=[[0,-az],[0,az],[-ax,0],[ax,0],[-ax,-az],[ax,-az],[-ax,az],[ax,az]];
-  const okc=c.filter(p=>!shapeBlocks.some(b=>p[0]>b[0]-1.8&&p[0]<b[1]+1.8&&p[1]>b[2]-1.8&&p[1]<b[3]+1.8)), cc=okc.length?okc:c;   // không cho ma hiện hình trong tường
-  let best=cc[0],bd=-1; cc.forEach(p=>{const d=Math.hypot(p[0]-camera.position.x,p[1]-camera.position.z);if(d>bd){bd=d;best=p;}});
-  gh.x=best[0]; gh.z=best[1]; gh.phase='reveal'; gh.t0=gh.t=2.2; gh.step=0; gh.alpha=0; gh.shr=false;
+  // CẢNH PHIM NGẮN: camera tự quay về phía trước, sàn nứt, ma trồi lên từ dưới đất (đầu cúi, tay buông) rồi ngẩng phắt lên -> mới bắt đầu đuổi
+  let best=spawnSpot();
+  if(!best){
+    const ax=RW/2-2.5, az=RD/2-2.5;
+    const c=[[0,-az],[0,az],[-ax,0],[ax,0],[-ax,-az],[ax,-az],[-ax,az],[ax,az]];
+    const okc=c.filter(p=>!shapeBlocks.some(b=>p[0]>b[0]-1.8&&p[0]<b[1]+1.8&&p[1]>b[2]-1.8&&p[1]<b[3]+1.8)), cc=okc.length?okc:c;
+    best=cc[0]; let bd=-1; cc.forEach(p=>{const d=Math.hypot(p[0]-camera.position.x,p[1]-camera.position.z);if(d>bd){bd=d;best=p;}});
+  }
+  gh.x=best[0]; gh.z=best[1]; gh.px=gh.x; gh.pz=gh.z; gh.phase='reveal'; gh.t0=gh.t=5.4; gh.step=0; gh.alpha=0; gh.shr=false; gh.sinkMax=2.75; gh.sink=gh.sinkMax; gh.pool=0; gh.pe=0;
   gh.face=Math.atan2(camera.position.x-gh.x,camera.position.z-gh.z);
+  $('bars').className='on'; $('banner').style.opacity=0; $('prompt').style.display='none';
+  noise(1.6,.22); tone(40,4.2,'sine',.35,26);                          // tiếng ầm ì dưới sàn
   if(ghostSound()) gh.shr=true;            // có file tiếng ma -> bỏ tiếng gào tổng hợp
-  else{ noise(1.4,.3); tone(70,1.6,'sawtooth',.2,160); }
 }
 function moveGhost(tx,tz,sp,dt){
   const dx=tx-gh.x,dz=tz-gh.z,d=Math.hypot(dx,dz)||1,s=Math.min(d,sp*dt);
@@ -2166,13 +2213,16 @@ function updGhost(dt){
   }
   if(P==='warn'){ gh.t-=dt; if(gh.t<=0) ghostSpawn(); return; }
   if(P==='reveal'){
-    // Ma chập chờn hiện hình ở xa (người chơi vẫn điều khiển bình thường) -> gào một tiếng -> bắt đầu đuổi
     gh.t-=dt; const e=gh.t0-gh.t;
-    gh.alpha=e<1.2?Math.min(1,e/1.2)*(Math.random()<.35?.3:1):1;
+    gh.alpha=e<.5?Math.min(1,e/.5)*(Math.random()<.4?.4:1):(e<2?(Math.random()<.12?.5:1):1);
+    const rk=Math.max(0,Math.min(1,e/3.8));
+    gh.sink=Math.max(0,gh.sinkMax*(1-rk*rk*(3-2*rk))+(1-rk)*Math.sin(e*21)*.015);   // trồi lên chậm, hơi giật
     gh.face=Math.atan2(camera.position.x-gh.x,camera.position.z-gh.z);
-    if(Math.random()<dt*2) noise(.25,.1);
-    if(e>1.2&&!gh.shr){gh.shr=true; tone(900,.9,'sawtooth',.14,260); tone(120,1,'square',.14,50); noise(.9,.3);}
-    if(gh.t<=0){gh.phase='hunt'; gh.t=0; gh.step=0;
+    if(Math.random()<dt*7) noise(.2,.08);                                           // sàn nứt rạn
+    if(Math.random()<dt*2.5) tone(35+Math.random()*25,.5,'sine',.25,28);
+    shake=Math.max(shake,e<3.8?.014+.016*rk:.08);
+    if(e>4.0&&!gh.shr){gh.shr=true; tone(900,.9,'sawtooth',.14,260); tone(120,1,'square',.14,50); noise(.9,.3);}
+    if(gh.t<=0){gh.phase='hunt'; gh.t=0; gh.step=0; gh.sink=0; $('bars').className='';
       noise(1.2,.35); tone(60,1.4,'sawtooth',.22,200); whisper('chạy đi...');
       banner('NÓ ĐANG ĐUỔI THEO BẠN!\nTRỐN NGAY (tủ / gầm giường — E)',3200);}
     return;
@@ -2225,13 +2275,14 @@ function legIK(z,dy){                                    // giải IK 2 khớp: 
 function animGhost(dt){
   if(gh.phase==='idle'){gWasIdle=true; return;}
   if(gWasIdle){gPX=gh.x; gPZ=gh.z; gPh=0; gWk=0; gWasIdle=false;}
+  riseFxUpdate(dt);
   const t=tt, hunting=(gh.phase==='hunt'||gh.phase==='scare'), reveal=gh.phase==='reveal', peek=(gh.phase==='search'||gh.phase==='leave');
   gGlT-=dt; if(gGlT<=0){gGlT=hunting?.25+Math.random()*.9:.8+Math.random()*2.4; gGl=.05+Math.random()*.09;}
   const gl=gGl>0; if(gl) gGl-=dt;
   const op=gh.alpha*(gl&&Math.random()<.5?.5:1), tr=op<.995;
   gMats.forEach(m=>{m.opacity=op; m.transparent=tr;});
   gLight.intensity=gh.alpha*2.4*(.6+.4*Math.random());
-  const lunge=reveal&&gh.t0-gh.t>1.4, scr=gh.phase==='scare'||lunge;
+  const re=reveal?gh.t0-gh.t:0, lunge=reveal&&re>4.0, scr=gh.phase==='scare'||lunge;
   // ---- nhịp bước theo QUÃNG ĐƯỜNG thực -> chân bám đất, không trượt ----
   let dist=Math.hypot(gh.x-gPX,gh.z-gPZ); gPX=gh.x; gPZ=gh.z; if(dist>.5) dist=0;
   const spdRaw=dt>0?dist/dt:0;
@@ -2240,8 +2291,8 @@ function animGhost(dt){
   gPh=(gPh+gSpd*dt/GCYC)%1;                                 // gPh: 0..1 = một chu kỳ 2 bước
   if(gh.phase!=='scare'){
     const sp=curSpot;
-    const sink=peek&&sp?sp.sink*gh.peek:0;
-    const bend=peek&&sp?sp.bend*gh.peek:(reveal?.65*Math.max(0,gh.t/gh.t0):0);
+    const sink=peek&&sp?sp.sink*gh.peek:(reveal?(gh.sink||0):0);
+    const bend=peek&&sp?sp.bend*gh.peek:(reveal?.4*(1-gsm(re/4.2)):0);
     ghostRoot.position.set(gh.x+(gl?(Math.random()-.5)*.16:0),-sink,gh.z+(gl?(Math.random()-.5)*.16:0));
     let da=gh.face-ghostRoot.rotation.y; da=Math.atan2(Math.sin(da),Math.cos(da));
     gTurn+=((da*8)-gTurn)*Math.min(1,dt*6);               // tốc độ quay người (để nghiêng khi rẽ)
@@ -2273,15 +2324,16 @@ function animGhost(dt){
   gBody.rotation.x=gBRX;
   gDress.scale.set(1+br*.012+.03*wk*Math.abs(cR),1,1+br*.012+.03*wk*Math.abs(cR));
   // đầu: bù ngược thân cho khỏi lắc; nghiêng vẹo như gãy cổ
-  gHeadG.rotation.set(.14+Math.sin(t*2.1)*.05+(scr?.25:0)-.015*wk*Math.cos(4*Math.PI*gPh),
+  const hdn=reveal?1-gsm((re-3.0)/1.0):0;                                   // đầu cúi gằm khi mới trồi lên, rồi ngẩng phắt
+  gHeadG.rotation.set(.14+.9*hdn+Math.sin(t*2.1)*.05+(scr?.25:0)-.015*wk*Math.cos(4*Math.PI*gPh),
     Math.sin(t*1.3)*.22+.05*cR*wk+(scr?(Math.random()-.5)*.4:0),
-    .3+Math.sin(t*.9)*.1+.025*sR*wk+(scr?(Math.random()-.5)*.5:0)+(gl?(Math.random()-.5)*.7:0));
+    .3+.25*hdn+Math.sin(t*.9)*.1+.025*sR*wk+(scr?(Math.random()-.5)*.5:0)+(gl?(Math.random()-.5)*.7:0));
   gEyes.forEach(e=>e.lookAt(camera.position));
   const openT=scr?1.05+Math.abs(Math.sin(t*38))*.3:(hunting?.5+Math.sin(t*5)*.12:(peek?.2+gh.peek*.6:.14+Math.sin(t*2.5)*.05));
   gOpen+=(openT-gOpen)*Math.min(1,dt*(scr?30:8));
   gMouth.scale.set(1,Math.max(.05,gOpen),1);
   // ---- tay: vung NGƯỢC chiều chân cùng bên, khuỷu tay và cổ tay chậm hơn vai một nhịp (follow-through) ----
-  const base=gh.phase==='scare'?1.4:(hunting?.45:(reveal?.85:.18));
+  const base=gh.phase==='scare'?1.4:(hunting?.45:(reveal?.12+.8*gsm((re-3.2)/1.2):.18));
   gArms.forEach((a,i)=>{
     const lg=gLegs[i], ps=lg?lg.p:0, ang=2*Math.PI*ps, sw=-Math.cos(ang), swl=-Math.cos(ang-.7), idle=1-wk;
     const tgtX=-(base+.26*wk*sw);
@@ -2369,7 +2421,7 @@ addEventListener('mousemove',e=>{
   const r=stage.getBoundingClientRect();
   mouseX=(e.clientX-r.left)/r.width*2-1; mouseY=(e.clientY-r.top)/r.height*2-1;
   mouseIn=Math.abs(mouseX)<=1&&Math.abs(mouseY)<=1;
-  if(state!=='play'||modalOpen) return;
+  if(state!=='play'||modalOpen||(gh.phase==='reveal'&&!hidden)) return;
   // Vuốt sang phải -> quay phải, sang trái -> quay trái (cả khi khóa chuột thật lẫn khi bị trình duyệt chặn)
   if(isLocked()||dragging||fakeLock()){
     if(Math.abs(e.movementX)>250||Math.abs(e.movementY)>250) return;   // Chrome đôi khi báo delta khổng lồ lúc vừa khóa chuột
@@ -2421,7 +2473,7 @@ canvas.addEventListener('touchmove',e=>{
       joy.x=dx/R; joy.y=dy/R; if(Math.hypot(joy.x,joy.y)<.15){joy.x=joy.y=0;}    // vùng chết
       placeJoy($('joyK'),joyOX+dx,joyOY+dy);
     } else if(t.identifier===lookId){
-      if(state==='play'&&!modalOpen){
+      if(state==='play'&&!modalOpen&&!(gh.phase==='reveal'&&!hidden)){
         const k=.0035*1280/Math.max(1,STW);
         yaw-=(t.clientX-lookX)*k; pitch=Math.max(-1.3,Math.min(1.3,pitch-(t.clientY-lookY)*k));
       }
@@ -2658,15 +2710,23 @@ function update(dt){
   if(state==='scare'){ updScare(dt); return; }
   if(state!=='play') return;
   if(modalOpen&&joyId!==null) stopJoy();
-  if(!modalOpen){ if(keys.ArrowLeft) yaw+=1.8*dt; if(keys.ArrowRight) yaw-=1.8*dt; }
+  if(!modalOpen&&gh.phase!=='reveal'){ if(keys.ArrowLeft) yaw+=1.8*dt; if(keys.ArrowRight) yaw-=1.8*dt; }
   // Shift Lock dự phòng (không khóa được chuột): xoay camera theo vị trí chuột so với tâm khung
   // (khi không khóa được chuột, con trỏ ẩn nhưng vẫn chạm mép màn hình -> chạm mép thì tiếp tục xoay về phía đó)
   if(!modalOpen&&fakeLock()&&mouseIn&&!dragging){
     const eb=.94, f=v=>Math.abs(v)>eb?Math.sign(v)*(Math.abs(v)-eb)/(1-eb):0;
     yaw-=f(mouseX)*2.6*dt; pitch=Math.max(-1.3,Math.min(1.3,pitch-f(mouseY)*1.6*dt));
   }
+  if(gh.phase==='reveal'&&!hidden&&!modalOpen){          // camera tự quay về phía ma, nhìn xuống vết nứt rồi ngước lên theo thân ma
+    const dx=gh.x-camera.position.x, dz=gh.z-camera.position.z, dd=Math.hypot(dx,dz)||1;
+    let da=Math.atan2(-dx,-dz)-yaw; da=Math.atan2(Math.sin(da),Math.cos(da)); yaw+=da*Math.min(1,dt*3.2);
+    const hy=Math.min(2.3,Math.max(.1,2.45-(gh.sink||0)));
+    pitch+=(Math.atan2(hy-1.6,dd)-pitch)*Math.min(1,dt*2.4);
+  }
+  { const ft=gh.phase==='reveal'?60:72;                    // zoom nhẹ vào khi ma trồi lên, nhả ra khi bắt đầu đuổi
+    if(Math.abs(ft-camera.fov)>.01){ camera.fov+=(ft-camera.fov)*Math.min(1,dt*(ft<camera.fov?.8:4)); camera.updateProjectionMatrix(); } }
   let moving=false;
-  if(!modalOpen&&!hidden&&!transitioning&&!intro.on){
+  if(!modalOpen&&!hidden&&!transitioning&&!intro.on&&gh.phase!=='reveal'){
     let f=0,s=0;
     if(keys.KeyW||keys.ArrowUp)f++; if(keys.KeyS||keys.ArrowDown)f--; if(keys.KeyD)s++; if(keys.KeyA)s--;
     if(touchMode&&joyId!==null){f-=joy.y; s+=joy.x;}
@@ -2716,7 +2776,7 @@ function update(dt){
   // tương tác
   cur=null; let txt='';
   if(hidden){ txt=gh.phase==='idle'?'[E] Ra khỏi chỗ trốn':'Đừng cử động...'; }
-  else if(!modalOpen&&!transitioning&&!intro.on){
+  else if(!modalOpen&&!transitioning&&!intro.on&&gh.phase!=='reveal'){
     const px=camera.position.x,pz=camera.position.z; let best=99;
     for(const o of inter){
       if(o.kind==='clue'&&solved[o.idx]) continue;
