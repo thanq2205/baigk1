@@ -1025,7 +1025,7 @@ function pulseClues(){
 // ---------- Ma (thực thể): oan hồn tóc dài, váy rách ướt, da xám tái, mắt đỏ ngầu nhìn theo bạn ----------
 const ghostRoot=new THREE.Group(); ghostRoot.rotation.order='YXZ'; ghostRoot.position.set(0,-80,0); scene.add(ghostRoot);
 const gBody=new THREE.Group(); ghostRoot.add(gBody);
-const gArms=[], gFingers=[], gMats=[], gEyes=[]; let gHeadG, gHeadC, gMouth, gLight, gHair, gRags, gDress;
+const gArms=[], gFingers=[], gMats=[], gEyes=[], gLegs=[]; let gHeadG, gHeadC, gMouth, gLight, gHair, gRags, gDress;
 
 function headShape(x,y,z){            // điểm (x,y,z) trên mặt cầu đơn vị -> điểm trên khuôn mặt biến dạng của ma (mét)
   let k=1;
@@ -1091,22 +1091,22 @@ function mkRibbons(strands,mat){      // dải ruy-băng mảnh (tóc, mảnh v�
 
   // ----- váy trắng rách, ướt, ố bẩn -----
   const dtx=dressTex(), dressM=new THREE.MeshStandardMaterial({map:dtx,emissiveMap:dtx,emissive:0xffffff,emissiveIntensity:.2,bumpMap:bumpTex(),bumpScale:1.5,roughness:.8,side:THREE.DoubleSide});
-  const prof=[[.38,.62],[.6,.52],[.85,.38],[1.08,.25],[1.3,.18],[1.55,.205],[1.8,.255],[1.95,.3],[2.03,.2],[2.1,.1]];
+  const prof=[[.9,.4],[.98,.31],[1.08,.25],[1.3,.18],[1.55,.205],[1.8,.255],[1.95,.3],[2.03,.2],[2.1,.1]];
   const dg=new THREE.LatheGeometry(prof.map(p=>new THREE.Vector2(p[1],p[0])),64), dp=dg.attributes.position;
   for(let i=0;i<dp.count;i++){
     let x=dp.getX(i), y=dp.getY(i), z=dp.getZ(i);
-    const a=Math.atan2(z,x), low=Math.max(0,Math.min(1,(1.3-y)/.9));
+    const a=Math.atan2(z,x), low=Math.max(0,Math.min(1,(1.3-y)/.4));
     const f=1+(.02+.07*low)*Math.sin(a*9+y*2.4)+.035*low*Math.sin(a*17-y*5);     // nếp gấp vải
     x*=f; z*=f*(.62+.38*low);                                                      // thân trên dẹt, chân váy tròn
-    if(y<.5) y+=Math.max(0,Math.sin(a*8+.7)*Math.sin(a*3.1+2))*.26*(1-(y-.38)/.12); // gấu váy rách lởm chởm
+    if(y<.95) y+=Math.max(0,Math.sin(a*8+.7)*Math.sin(a*3.1+2))*.07; // gấu váy rách lởm chởm
     dp.setXYZ(i,x,y,z);
   }
   dg.computeVertexNormals();
   gDress=new THREE.Mesh(dg,dressM); gBody.add(gDress);
   const rg=[];
   for(let i=0;i<54;i++){                           // mảnh vải rách rủ xuống từ gấu váy
-    const a=i/54*Math.PI*2+Math.random()*.1, L=.22+Math.random()*.34, N=7, r=.62+Math.random()*.04, sx=Math.sin(a), cz=Math.cos(a), p=[];
-    for(let k=0;k<=N;k++){const s=k/N, rr=r+s*.06; p.push([sx*rr,.5-L*s,cz*rr]);}
+    const a=i/54*Math.PI*2+Math.random()*.1, L=.2+Math.random()*.3, N=7, r=.4+Math.random()*.03, sx=Math.sin(a), cz=Math.cos(a), p=[];
+    for(let k=0;k<=N;k++){const s=k/N, rr=r+s*.06; p.push([sx*rr,.95-L*s,cz*rr]);}
     rg.push({p:p,w:.07+Math.random()*.08,n:[sx,0,cz],taper:.9,u0:Math.random()*.8,du:.1,v0:0,dv:.12,len:L});
   }
   gRags=mkRibbons(rg,dressM); gBody.add(gRags.mesh);
@@ -1197,6 +1197,20 @@ function mkRibbons(strands,mat){      // dải ruy-băng mảnh (tóc, mảnh v�
       gFingers.push({f1:f1,f2:f2,f3:f3,ph:Math.random()*6.28});
     }
     gArms.push({sh:sh,el:el,hand:hand,s:s});
+  });
+
+  // ----- hai chân dài khẳng khiu: đùi, đầu gối, cẳng chân, bàn chân (để bước đi thật) -----
+  [-1,1].forEach(s=>{
+    const hip=new THREE.Group(); hip.position.set(s*.11,1.32,0); gBody.add(hip);
+    hip.add(new THREE.Mesh(new THREE.SphereGeometry(.07,10,8),skinM));
+    hip.add(mkSeg(.63,.07,.052));
+    const knee=new THREE.Group(); knee.position.y=-.63; hip.add(knee);
+    knee.add(new THREE.Mesh(new THREE.SphereGeometry(.05,10,8),skinM));
+    knee.add(mkSeg(.62,.05,.034));
+    const foot=new THREE.Group(); foot.position.y=-.62; knee.add(foot);
+    foot.add(new THREE.Mesh(new THREE.SphereGeometry(.036,8,6),skinM));
+    const fb=new THREE.Mesh(new THREE.BoxGeometry(.07,.05,.2),skinM); fb.position.set(0,-.03,.05); foot.add(fb);
+    gLegs.push({hip:hip,knee:knee,foot:foot,s:s});
   });
 
   gLight=new THREE.PointLight(0xcfd8ff,0,11); gLight.position.set(0,2.2,.9); gBody.add(gLight);
@@ -2188,9 +2202,10 @@ function updGhost(dt){
     if(gh.t<=0){parkGhost(); ghostTimer=45+Math.random()*35; banner('Ma đã đi rồi... Bạn có thể ra ngoài.',2800);}
   }
 }
-let gGlT=2, gGl=0, gLift=0, gOpen=0;
+let gGlT=2, gGl=0, gLift=0, gOpen=0, gPh=0, gWk=0, gPX=0, gPZ=0, gWasIdle=true;
 function animGhost(dt){
-  if(gh.phase==='idle') return;
+  if(gh.phase==='idle'){gWasIdle=true; return;}
+  if(gWasIdle){gPX=gh.x; gPZ=gh.z; gPh=0; gWk=0; gWasIdle=false;}
   const t=tt, hunting=(gh.phase==='hunt'||gh.phase==='scare'), reveal=gh.phase==='reveal', peek=(gh.phase==='search'||gh.phase==='leave');
   // chớp giật (glitch) ngẫu nhiên: ma rung, mờ rồi hiện lại
   gGlT-=dt; if(gGlT<=0){gGlT=hunting?.25+Math.random()*.9:.8+Math.random()*2.4; gGl=.05+Math.random()*.09;}
@@ -2198,47 +2213,69 @@ function animGhost(dt){
   const op=gh.alpha*(gl&&Math.random()<.5?.5:1), tr=op<.995;
   gMats.forEach(m=>{m.opacity=op; m.transparent=tr;});
   gLight.intensity=gh.alpha*2.4*(.6+.4*Math.random());
-  const ts=hunting?Math.floor(t*14)/14:t;                 // lúc đuổi: chuyển động giật cục kiểu stop-motion
   const lunge=reveal&&gh.t0-gh.t>1.4, scr=gh.phase==='scare'||lunge;
+  // ---- nhịp bước: pha chân tính theo QUÃNG ĐƯỜNG thực tế -> chân không bị trượt, đi nhanh thì bước nhanh ----
+  let dist=Math.hypot(gh.x-gPX,gh.z-gPZ); gPX=gh.x; gPZ=gh.z; if(dist>.5) dist=0;
+  const spd=dt>0?dist/dt:0;
+  gWk+=(Math.min(1,spd/3)-gWk)*Math.min(1,dt*10);        // 0 = đứng yên, 1 = đang đi/đuổi
+  gPh+=dist/2.4*Math.PI*2;                                // 1 chu kỳ (2 bước) = 2,4 m
   if(gh.phase!=='scare'){
     const sp=curSpot;
     const sink=peek&&sp?sp.sink*gh.peek:0;
     const bend=peek&&sp?sp.bend*gh.peek:(reveal?.65*Math.max(0,gh.t/gh.t0):0);
-    ghostRoot.position.set(gh.x+(gl?(Math.random()-.5)*.16:0),-sink+Math.sin(t*1.7)*.06,gh.z+(gl?(Math.random()-.5)*.16:0));
+    ghostRoot.position.set(gh.x+(gl?(Math.random()-.5)*.16:0),-sink,gh.z+(gl?(Math.random()-.5)*.16:0));
     let da=gh.face-ghostRoot.rotation.y; da=Math.atan2(Math.sin(da),Math.cos(da));
     ghostRoot.rotation.y+=da*Math.min(1,dt*8);
     ghostRoot.rotation.x=bend;
   }
-  // thân: thở, đung đưa, chồm tới khi đuổi
+  // ---- chân: đùi vung, đầu gối gập lúc đưa chân lên, bàn chân luôn đặt phẳng; thân nhấp nhô theo bước ----
+  const A=.5*gWk; let lowest=0;
+  gLegs.forEach(l=>{
+    const ph=gPh+(l.s>0?0:Math.PI), sn=Math.sin(ph), cs=Math.cos(ph);
+    const f=A*sn;                                         // góc đùi: >0 = đưa ra trước
+    const kb=.06+1.15*gWk*Math.pow(Math.max(0,cs),1.4);   // đầu gối gập mạnh nhất lúc chân đang đưa tới
+    l.hip.rotation.x=-f; l.knee.rotation.x=kb;
+    l.foot.rotation.x=(f-kb)+.5*gWk*Math.max(0,-sn)-.2*gWk*Math.max(0,cs);   // giữ bàn chân phẳng; nhón gót khi đạp, hếch mũi khi đưa
+    l.hip.rotation.z=l.s*.03*gWk;
+    l.fy=-.63*Math.cos(f)-.62*Math.cos(f-kb);             // độ cao bàn chân so với hông
+    lowest=Math.min(lowest,l.fy);
+  });
+  const hipH=-lowest-1.25;                                // chân thấp nhất luôn chạm đất, thân dập dềnh theo bước
+  const wr=Math.sin(gPh);
+  gBody.position.set(Math.sin(gPh)*.03*gWk,hipH*gWk+Math.sin(t*1.7)*.03*(1-gWk),0);
+  // thân: thở, xoay vai ngược hông, chồm tới khi đuổi
   const br=Math.sin(t*2.3);
-  gBody.rotation.z=Math.sin(t*1.1)*.035+(gl?(Math.random()-.5)*.1:0);
-  gBody.rotation.x=.05+br*.012+(hunting?.12:0);
+  gBody.rotation.y=wr*.14*gWk;
+  gBody.rotation.z=Math.sin(t*1.1)*.035*(1-gWk)+wr*.04*gWk+(gl?(Math.random()-.5)*.1:0);
+  gBody.rotation.x=.05+br*.012+(hunting?.12:0)+.05*gWk;
   gDress.scale.set(1+br*.012,1,1+br*.012);
-  // đầu: nghiêng vẹo như gãy cổ, giật khi hù
-  gHeadG.rotation.set(.14+Math.sin(ts*2.1)*.05+(scr?.25:0),Math.sin(ts*1.3)*.22+(scr?(Math.random()-.5)*.4:0),.3+Math.sin(ts*.9)*.1+(scr?(Math.random()-.5)*.5:0)+(gl?(Math.random()-.5)*.7:0));
+  // đầu: nghiêng vẹo như gãy cổ, giật khi hù; lúc đi đầu nhấp nhô ngược thân cho đỡ giật
+  gHeadG.rotation.set(.14+Math.sin(t*2.1)*.05+(scr?.25:0)-wr*.03*gWk,Math.sin(t*1.3)*.22-wr*.1*gWk+(scr?(Math.random()-.5)*.4:0),.3+Math.sin(t*.9)*.1-wr*.05*gWk+(scr?(Math.random()-.5)*.5:0)+(gl?(Math.random()-.5)*.7:0));
   gEyes.forEach(e=>e.lookAt(camera.position));            // mắt luôn dõi theo người chơi
   // miệng há/ngậm
-  const openT=scr?1.05+Math.abs(Math.sin(t*38))*.3:(hunting?.5+Math.sin(ts*5)*.12:(peek?.2+gh.peek*.6:.14+Math.sin(t*2.5)*.05));
+  const openT=scr?1.05+Math.abs(Math.sin(t*38))*.3:(hunting?.5+Math.sin(t*5)*.12:(peek?.2+gh.peek*.6:.14+Math.sin(t*2.5)*.05));
   gOpen+=(openT-gOpen)*Math.min(1,dt*(scr?30:8));
   gMouth.scale.set(1,Math.max(.05,gOpen),1);
-  // tay vươn tới
-  const tgt=hunting?-1.4:(reveal?-.85:-.18);
+  // ---- tay: vươn về phía trước, vung NGƯỢC chiều với chân cùng bên (như người đi thật) ----
+  const base=gh.phase==='scare'?1.4:(hunting?.75:(reveal?.85:.18));
   gArms.forEach((a,i)=>{
-    a.sh.rotation.x+=((tgt+Math.sin(ts*3+i)*.08)-a.sh.rotation.x)*Math.min(1,dt*6);
-    a.sh.rotation.z=a.s*(.08+(hunting?.18:0)+Math.sin(ts*2+i)*.03);
-    a.el.rotation.x=-.2-(hunting?.35:0)+Math.sin(ts*5+i*2)*.08;
-    a.hand.rotation.x=Math.sin(ts*7+i)*.15-(hunting?.2:0);
+    const ap=gPh+(a.s>0?Math.PI:0), sw=Math.sin(ap), idle=1-gWk;
+    const tgtX=-(base+.45*gWk*sw);
+    a.sh.rotation.x+=((tgtX+Math.sin(t*3+i)*.05*idle)-a.sh.rotation.x)*Math.min(1,dt*9);
+    a.sh.rotation.z=a.s*(.08+(hunting?.14:0)+Math.sin(t*2+i)*.03*idle);
+    a.el.rotation.x=-.2-(hunting?.3:0)-.35*gWk*Math.max(0,sw)+Math.sin(t*5+i*2)*.05*idle;
+    a.hand.rotation.x=Math.sin(t*7+i)*.12*idle-(hunting?.15:0)-.2*gWk*sw;
   });
   // ngón tay co giật như móng vuốt
   const cb=gh.phase==='scare'?.55:(hunting?.2:.36);
   gFingers.forEach(f=>{
-    const w=Math.sin(ts*9+f.ph)*.12+(gl?(Math.random()-.5)*.5:0);
+    const w=Math.sin(t*9+f.ph)*.12+(gl?(Math.random()-.5)*.5:0);
     f.f1.rotation.x=cb+w; f.f2.rotation.x=cb*1.5+w*.8; f.f3.rotation.x=cb*1.2+w*.6;
   });
-  // tóc và mảnh váy bay: lúc đuổi tóc bay dựng lên như trôi trong nước
+  // tóc và mảnh váy bay: lúc đuổi tóc dựng lên như trôi trong nước
   gLift+=(((hunting||lunge)?1:(reveal?.35:0))-gLift)*Math.min(1,dt*2.5);
   gHair.upd(t,.05+(hunting?.04:0)+(gl?.05:0),gLift);
-  gRags.upd(t,.05,gLift*.3);
+  gRags.upd(t,.05+.05*gWk,gLift*.3);
 }
 const sc=$('scare'), scx=sc.getContext('2d');
 function drawScare(t){
