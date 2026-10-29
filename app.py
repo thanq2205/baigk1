@@ -622,7 +622,7 @@ AudioNode.prototype.connect=function(d,...r){
   return _mc.call(this,d,...r);
 };
 const COARSE=!!(window.matchMedia&&matchMedia('(pointer:coarse)').matches);   // điện thoại / máy tính bảng
-let Q=loadNum('doors_q',COARSE?4:8,1,10), HQ=Q>=6;       // mức đồ họa 1-10 (<=5: Thấp, >=6: Cao)
+let Q=loadNum('doors_q2',1,1,10), HQ=Q>=6;       // mức đồ họa 1-10 (<=5: Thấp, >=6: Cao)
 let STW=1280, STH=720, mouseX=0, mouseY=0, mouseIn=false, optOrder=[], wrongSet={}, lockFailShown=false, lockBlocked=false, lockEver=false, lockMsgT=0, touchMode=COARSE;
 // Cao: độ phân giải gần đầy đủ. Thấp: render độ phân giải rất nhỏ rồi phóng to kiểu pixel (low-poly retro)
 const pr=()=>HQ?Math.max(.8,Math.min(window.devicePixelRatio||1,.55+Q*.15)):(0.28+Q*0.05);
@@ -1993,7 +1993,7 @@ function applyQuality(noBuild){
     if(a[0].shadow.map){a[0].shadow.map.dispose();a[0].shadow.map=null;} a[0].shadow.mapSize.set(a[1],a[1]);});
   $('grain').style.display=HQ?'block':'none'; dust.visible=HQ;
   gMats.forEach(m=>{m.needsUpdate=true;});
-  saveNum('doors_q',Q); updateSettingsUI();
+  saveNum('doors_q2',Q); updateSettingsUI();
   if(!noBuild) buildRoom();
 }
 $('settingsBtn').onclick=()=>{showOnly('settings');updateSettingsUI();};
