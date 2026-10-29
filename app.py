@@ -1112,7 +1112,7 @@ function mkRibbons(strands,mat){      // dải ruy-băng mảnh (tóc, mảnh v�
   gRags=mkRibbons(rg,dressM); gBody.add(gRags.mesh);
 
   // ----- cổ dài gầy guộc + gân -----
-  const neck=new THREE.Mesh(new THREE.CylinderGeometry(.045,.058,.34,10,3),skinM); neck.position.set(0,2.18,.01); neck.rotation.z=.08; gBody.add(neck);
+  const neck=new THREE.Mesh(new THREE.CylinderGeometry(.055,.07,.34,10,3),skinM); neck.position.set(0,2.18,.01); neck.rotation.z=.08; gBody.add(neck);
   [-1,1].forEach(s=>{const c=new THREE.Mesh(new THREE.CylinderGeometry(.008,.01,.3,5),skinM); c.position.set(s*.03,2.17,.045); c.rotation.z=-s*.08; gBody.add(c);});
 
   // ----- đầu: hộp sọ biến dạng, hốc mắt sâu, má hóp, cằm nhọn -----
@@ -1177,22 +1177,22 @@ function mkRibbons(strands,mat){      // dải ruy-băng mảnh (tóc, mảnh v�
   const mkSeg=(len,r0,r1)=>{const m=new THREE.Mesh(new THREE.CylinderGeometry(r0,r1,len,10,2),skinM); m.position.y=-len/2; return m;};
   [-1,1].forEach(s=>{
     const sh=new THREE.Group(); sh.position.set(s*.31,s<0?1.99:1.93,0); gBody.add(sh);
-    sh.add(new THREE.Mesh(new THREE.SphereGeometry(.05,10,8),skinM));
-    sh.add(mkSeg(1.0,.042,.031));
+    sh.add(new THREE.Mesh(new THREE.SphereGeometry(.075,10,8),skinM));
+    sh.add(mkSeg(1.0,.068,.05));
     const el=new THREE.Group(); el.position.y=-1.0; sh.add(el);
-    el.add(new THREE.Mesh(new THREE.SphereGeometry(.036,10,8),skinM));
-    el.add(mkSeg(1.05,.03,.021));
+    el.add(new THREE.Mesh(new THREE.SphereGeometry(.056,10,8),skinM));
+    el.add(mkSeg(1.05,.048,.034));
     const hand=new THREE.Group(); hand.position.y=-1.05; el.add(hand);
-    const palm=new THREE.Mesh(new THREE.SphereGeometry(1,10,8),skinM); palm.scale.set(.04,.075,.016); palm.position.y=-.05; hand.add(palm);
+    const palm=new THREE.Mesh(new THREE.SphereGeometry(1,10,8),skinM); palm.scale.set(.055,.09,.024); palm.position.y=-.05; hand.add(palm);
     const fl=[.7,1,1.12,1.04,.88];
     for(let k=0;k<5;k++){
       const L=fl[k], l1=.12*L, l2=.085*L, l3=.062*L;
       const f1=new THREE.Group(); f1.position.set((k-2)*.017*s*(k===0?1.6:1),k===0?-.03:-.1,0); f1.rotation.z=(k-2)*.16*s; hand.add(f1);
-      const s1=new THREE.Mesh(new THREE.CylinderGeometry(.0105,.009,l1,6,1),skinM); s1.position.y=-l1/2; f1.add(s1);
+      const s1=new THREE.Mesh(new THREE.CylinderGeometry(.0145,.0125,l1,6,1),skinM); s1.position.y=-l1/2; f1.add(s1);
       const f2=new THREE.Group(); f2.position.y=-l1; f1.add(f2);
-      const s2=new THREE.Mesh(new THREE.CylinderGeometry(.009,.0078,l2,6,1),skinM); s2.position.y=-l2/2; f2.add(s2);
+      const s2=new THREE.Mesh(new THREE.CylinderGeometry(.0125,.0108,l2,6,1),skinM); s2.position.y=-l2/2; f2.add(s2);
       const f3=new THREE.Group(); f3.position.y=-l2; f2.add(f3);
-      const s3=new THREE.Mesh(new THREE.CylinderGeometry(.0078,.005,l3,6,1),skinM); s3.position.y=-l3/2; f3.add(s3);
+      const s3=new THREE.Mesh(new THREE.CylinderGeometry(.0108,.0072,l3,6,1),skinM); s3.position.y=-l3/2; f3.add(s3);
       const claw=new THREE.Mesh(new THREE.ConeGeometry(.006,.045,5),clawM); claw.position.y=-l3-.018; claw.rotation.x=Math.PI; f3.add(claw);
       gFingers.push({f1:f1,f2:f2,f3:f3,ph:Math.random()*6.28});
     }
@@ -1202,14 +1202,14 @@ function mkRibbons(strands,mat){      // dải ruy-băng mảnh (tóc, mảnh v�
   // ----- hai chân dài khẳng khiu: đùi, đầu gối, cẳng chân, bàn chân (để bước đi thật) -----
   [-1,1].forEach(s=>{
     const hip=new THREE.Group(); hip.position.set(s*.11,1.32,0); gBody.add(hip);
-    hip.add(new THREE.Mesh(new THREE.SphereGeometry(.07,10,8),skinM));
-    hip.add(mkSeg(.63,.07,.052));
+    hip.add(new THREE.Mesh(new THREE.SphereGeometry(.095,10,8),skinM));
+    hip.add(mkSeg(.63,.095,.07));
     const knee=new THREE.Group(); knee.position.y=-.63; hip.add(knee);
-    knee.add(new THREE.Mesh(new THREE.SphereGeometry(.05,10,8),skinM));
-    knee.add(mkSeg(.62,.05,.034));
+    knee.add(new THREE.Mesh(new THREE.SphereGeometry(.068,10,8),skinM));
+    knee.add(mkSeg(.62,.066,.046));
     const foot=new THREE.Group(); foot.position.y=-.62; knee.add(foot);
-    foot.add(new THREE.Mesh(new THREE.SphereGeometry(.036,8,6),skinM));
-    const fb=new THREE.Mesh(new THREE.BoxGeometry(.07,.05,.2),skinM); fb.position.set(0,-.03,.05); foot.add(fb);
+    foot.add(new THREE.Mesh(new THREE.SphereGeometry(.05,8,6),skinM));
+    const fb=new THREE.Mesh(new THREE.BoxGeometry(.095,.065,.24),skinM); fb.position.set(0,-.03,.05); foot.add(fb);
     gLegs.push({hip:hip,knee:knee,foot:foot,s:s});
   });
 
