@@ -776,26 +776,154 @@ const webTex=()=>T('web',128,128,(g,w,h)=>{
   g.clearRect(0,0,w,h);g.strokeStyle='rgba(220,220,220,.55)';g.lineWidth=1;
   for(let i=0;i<=6;i++){const a=i/6*Math.PI/2;g.beginPath();g.moveTo(0,0);g.lineTo(Math.cos(a)*128,Math.sin(a)*128);g.stroke();}
   for(let r=18;r<130;r+=18){g.beginPath();for(let i=0;i<=6;i++){const a=i/6*Math.PI/2,rr=r*(0.9+Math.random()*.2),x=Math.cos(a)*rr,y=Math.sin(a)*rr;if(i)g.lineTo(x,y);else g.moveTo(x,y);}g.stroke();}});
-const faceTex=()=>T('face',512,640,(g,w,h)=>{
-  const gr=g.createRadialGradient(w/2,h*.45,30,w/2,h*.5,w*.75);gr.addColorStop(0,'#dcd6c6');gr.addColorStop(1,'#625b50');
-  g.fillStyle=gr;g.fillRect(0,0,w,h);
-  g.strokeStyle='rgba(40,40,40,.55)';g.lineWidth=1.4;
-  for(let i=0;i<46;i++){let x=rnd(0,w),y=rnd(0,h);g.beginPath();g.moveTo(x,y);for(let k=0;k<5;k++){x+=rnd(-26,26);y+=rnd(6,28);g.lineTo(x,y);}g.stroke();}
-  [-1,1].forEach(s=>{g.save();g.translate(w/2+s*102,h*.36);g.rotate(s*.28);
-    const eg=g.createRadialGradient(0,0,4,0,0,76);eg.addColorStop(0,'#000');eg.addColorStop(.7,'#050505');eg.addColorStop(1,'rgba(20,20,20,0)');
-    g.fillStyle=eg;g.beginPath();g.ellipse(0,0,64,98,0,0,7);g.fill();
-    g.fillStyle='#e8e8f0';g.beginPath();g.arc(0,8,5,0,7);g.fill();g.restore();
-    g.strokeStyle='rgba(20,20,20,.7)';g.lineWidth=5;g.beginPath();g.moveTo(w/2+s*92,h*.36+90);g.lineTo(w/2+s*88,h*.36+200);g.stroke();});
-  g.fillStyle='#101010';[-1,1].forEach(s=>{g.beginPath();g.ellipse(w/2+s*14,h*.55,6,15,s*.3,0,7);g.fill();});
-  g.save();g.translate(w/2,h*.77);
-  g.fillStyle='#000';g.beginPath();g.ellipse(0,0,150,128,0,0,7);g.fill();
-  const ey=x=>Math.sqrt(Math.max(0,1-(x/150)*(x/150)))*128;
-  g.fillStyle='#e8e2d0';
-  for(let i=-6;i<=6;i++){const x=i*21,hh=26+Math.abs(Math.sin(i*2.1))*22;
-    g.beginPath();g.moveTo(x-9,-ey(x-9)+3);g.lineTo(x,-ey(x)+hh);g.lineTo(x+9,-ey(x+9)+3);g.fill();
-    g.beginPath();g.moveTo(x-9,ey(x-9)-3);g.lineTo(x,ey(x)-hh*.8);g.lineTo(x+9,ey(x+9)-3);g.fill();}
+// ---------- Texture con ma: mặt, mắt, miệng, da, váy (vẽ thủ tục, chi tiết cao) ----------
+function mkCan(key,w,h,draw){ if(!CAN[key]){const c=document.createElement('canvas');c.width=w;c.height=h;draw(c.getContext('2d'),w,h);CAN[key]=c;} return CAN[key]; }
+function blots(g,w,h,n,cols,r0,r1,R,a0,a1){
+  for(let i=0;i<n;i++){
+    const x=R()*w,y=R()*h,r=r0+R()*(r1-r0),c=cols[Math.floor(R()*cols.length)],gr=g.createRadialGradient(x,y,0,x,y,r);
+    gr.addColorStop(0,'rgba('+c[0]+','+c[1]+','+c[2]+',1)'); gr.addColorStop(1,'rgba('+c[0]+','+c[1]+','+c[2]+',0)');
+    g.globalAlpha=a0+R()*(a1-a0); g.fillStyle=gr; g.fillRect(x-r,y-r,r*2,r*2);
+  }
+  g.globalAlpha=1;
+}
+function veinsDraw(g,x,y,ang,len,wd,R,depth){         // mạch máu phân nhánh
+  if(len<10||depth>4) return;
+  g.lineWidth=wd; g.beginPath(); g.moveTo(x,y);
+  let cx=x,cy=y,a=ang; const st=Math.ceil(len/10);
+  for(let i=0;i<st;i++){a+=(R()-.5)*.7;cx+=Math.cos(a)*10;cy+=Math.sin(a)*10;g.lineTo(cx,cy);}
+  g.stroke();
+  if(R()<.85) veinsDraw(g,cx,cy,a+.5+R()*.5,len*.55,wd*.7,R,depth+1);
+  if(R()<.6) veinsDraw(g,x+(cx-x)*.5,y+(cy-y)*.5,ang-.6-R()*.5,len*.5,wd*.7,R,depth+1);
+}
+function drawMouth(g,cx,cy,rx,ry,R){                  // miệng há rộng: môi khô nứt, răng nhọn ố vàng, lưỡi, dãi đen
+  g.save(); g.translate(cx,cy);
+  g.fillStyle='#5a4c55'; g.beginPath(); g.ellipse(0,0,rx*1.06,ry*1.12,0,0,7); g.fill();
+  const mg=g.createRadialGradient(0,ry*.1,ry*.1,0,0,rx);
+  mg.addColorStop(0,'#1c0308'); mg.addColorStop(.6,'#060102'); mg.addColorStop(1,'#000');
+  g.fillStyle=mg; g.beginPath(); g.ellipse(0,0,rx,ry,0,0,7); g.fill();
+  g.fillStyle='rgba(92,14,24,.92)'; g.beginPath(); g.ellipse(0,ry*.58,rx*.5,ry*.4,0,0,7); g.fill();
+  const ey=x=>Math.sqrt(Math.max(0,1-(x/rx)*(x/rx)))*ry;
+  for(let i=-7;i<=7;i++){
+    const x=i*rx/7.6, hh=ry*(.28+R()*.3), wd=rx*.05;
+    let tg=g.createLinearGradient(0,-ey(x),0,-ey(x)+hh); tg.addColorStop(0,'#7e765e'); tg.addColorStop(1,'#d9d0b2');
+    g.fillStyle=tg; g.beginPath(); g.moveTo(x-wd,-ey(x-wd)+2); g.lineTo(x+(R()-.5)*wd*.8,-ey(x)+hh); g.lineTo(x+wd,-ey(x+wd)+2); g.fill();
+    const h2=ry*(.22+R()*.3);
+    tg=g.createLinearGradient(0,ey(x),0,ey(x)-h2); tg.addColorStop(0,'#7e765e'); tg.addColorStop(1,'#d0c7a8');
+    g.fillStyle=tg; g.beginPath(); g.moveTo(x-wd,ey(x-wd)-2); g.lineTo(x+(R()-.5)*wd*.8,ey(x)-h2); g.lineTo(x+wd,ey(x+wd)-2); g.fill();
+  }
+  g.strokeStyle='rgba(8,3,5,.92)'; g.lineWidth=Math.max(2,rx*.02);
+  for(let i=0;i<9;i++){const x=(R()*2-1)*rx*.8; g.beginPath(); g.moveTo(x,ey(x)); g.lineTo(x+(R()-.5)*8,ey(x)+ry*(.3+R()*.8)); g.stroke();}
   g.restore();
-  stains(g,w,h,10,.25);noiseFx(g,w,h,16);});
+}
+function drawFace(g,w,h,scare){                       // scare=true: bản hù dọa (mắt mở, miệng há); false: bản gắn lên đầu 3D
+  const R=mulberry(90210);
+  let gr=g.createRadialGradient(w*.5,h*.45,w*.04,w*.5,h*.5,w*.78);
+  gr.addColorStop(0,'#cfcdbd'); gr.addColorStop(.5,'#9fa29a'); gr.addColorStop(1,'#3f4343');
+  g.fillStyle=gr; g.fillRect(0,0,w,h);
+  blots(g,w,h,170,[[96,112,124],[128,100,122],[154,150,108],[64,76,82],[176,120,120],[110,126,96]],28,120,R,.08,.22);
+  [-1,1].forEach(s=>{                                  // má hóp
+    const cx=w*(.5+s*.275),cy=h*.6,rr=w*.2,gg=g.createRadialGradient(cx,cy,4,cx,cy,rr);
+    gg.addColorStop(0,'rgba(18,22,26,.55)'); gg.addColorStop(1,'rgba(18,22,26,0)'); g.fillStyle=gg; g.fillRect(cx-rr,cy-rr,rr*2,rr*2);
+  });
+  g.strokeStyle='rgba(28,28,32,.3)'; g.lineWidth=3;     // nếp nhăn trán, rãnh mũi-miệng
+  for(let i=0;i<5;i++){const y=h*(.19+i*.026);g.beginPath();g.moveTo(w*.27,y+R()*8);g.quadraticCurveTo(w*.5,y-10-R()*12,w*.73,y+R()*8);g.stroke();}
+  [-1,1].forEach(s=>{g.beginPath();g.moveTo(w*(.5+s*.07),h*.575);g.quadraticCurveTo(w*(.5+s*.2),h*.64,w*(.5+s*.2),h*.74);g.stroke();});
+  g.strokeStyle='rgb(72,62,112)'; g.globalAlpha=.55;    // mạch máu tím dưới da
+  for(let i=0;i<30;i++){const s=R()<.5?-1:1;veinsDraw(g,w*(.5+s*(.1+R()*.32)),h*(.28+R()*.4),R()*6.28,70+R()*110,1+R()*2.2,R,0);}
+  g.globalAlpha=1;
+  g.strokeStyle='rgba(16,14,14,.65)'; g.lineWidth=1.4;  // da nứt nẻ
+  for(let i=0;i<44;i++){let x=w*(.12+R()*.76),y=h*(.1+R()*.72);g.beginPath();g.moveTo(x,y);for(let k=0;k<6;k++){x+=(R()-.5)*34;y+=4+R()*24;g.lineTo(x,y);}g.stroke();}
+  const ng=g.createLinearGradient(w*.45,0,w*.55,0);     // mũi
+  ng.addColorStop(0,'rgba(20,20,24,.28)'); ng.addColorStop(.5,'rgba(230,228,215,.16)'); ng.addColorStop(1,'rgba(20,20,24,.28)');
+  g.fillStyle=ng; g.fillRect(w*.45,h*.4,w*.1,h*.16);
+  g.fillStyle='rgba(8,6,6,.9)'; [-1,1].forEach(s=>{g.beginPath();g.ellipse(w*(.5+s*.034),h*.566,w*.012,h*.011,s*.35,0,7);g.fill();});
+  const sg=g.createRadialGradient(w*.5,h*.585,2,w*.5,h*.585,w*.1);
+  sg.addColorStop(0,'rgba(10,8,8,.35)'); sg.addColorStop(1,'rgba(10,8,8,0)'); g.fillStyle=sg; g.fillRect(w*.4,h*.55,w*.2,h*.1);
+  [-1,1].forEach(s=>{                                   // mắt
+    g.save(); g.translate(w*(.5+s*.19),h*.41); g.rotate(s*.18);
+    const eg=g.createRadialGradient(0,0,4,0,0,w*.15);
+    eg.addColorStop(0,'rgba(0,0,0,.95)'); eg.addColorStop(.5,'rgba(22,12,18,.85)'); eg.addColorStop(1,'rgba(22,12,18,0)');
+    g.fillStyle=eg; g.beginPath(); g.ellipse(0,0,w*.15,h*.095,0,0,7); g.fill();
+    if(scare){
+      const rx=w*.072,ry=h*.048;
+      g.fillStyle='#d8d0bc'; g.beginPath(); g.ellipse(0,0,rx,ry,0,0,7); g.fill();
+      const sh=g.createRadialGradient(0,0,rx*.3,0,0,rx*1.05); sh.addColorStop(0,'rgba(60,10,10,0)'); sh.addColorStop(1,'rgba(60,10,10,.8)');
+      g.fillStyle=sh; g.beginPath(); g.ellipse(0,0,rx,ry,0,0,7); g.fill();
+      g.strokeStyle='rgba(150,15,15,.75)'; g.lineWidth=1.6;
+      for(let i=0;i<24;i++){const a=R()*6.28;let x=Math.cos(a)*rx,y=Math.sin(a)*ry;g.beginPath();g.moveTo(x,y);for(let k=0;k<4;k++){x=x*(.8+R()*.1)+(R()-.5)*6;y=y*(.8+R()*.1)+(R()-.5)*6;g.lineTo(x,y);}g.stroke();}
+      g.fillStyle='#8f9aa0'; g.beginPath(); g.arc(0,0,h*.026,0,7); g.fill();
+      g.fillStyle='#000'; g.beginPath(); g.arc(0,0,h*.011,0,7); g.fill();
+      g.fillStyle='rgba(255,255,255,.9)'; g.beginPath(); g.arc(-h*.007,-h*.008,h*.005,0,7); g.fill();
+    } else {
+      g.fillStyle='#050304'; g.beginPath(); g.ellipse(0,0,w*.076,h*.05,0,0,7); g.fill();
+    }
+    g.strokeStyle='rgba(8,4,6,.85)'; g.lineWidth=6; g.beginPath(); g.ellipse(0,0,w*.076,h*.05,0,0,7); g.stroke();
+    g.restore();
+  });
+  if(scare) drawMouth(g,w*.5,h*.745,w*.2,h*.1,R);
+  else {                                                // môi xám tím nứt nẻ (miệng 3D phủ lên trên)
+    g.fillStyle='rgba(88,78,88,.75)'; g.beginPath(); g.ellipse(w*.5,h*.745,w*.18,h*.03,0,0,7); g.fill();
+    g.fillStyle='#030202'; g.beginPath(); g.ellipse(w*.5,h*.745,w*.16,h*.008,0,0,7); g.fill();
+  }
+  g.save(); g.shadowColor='rgba(0,0,0,.9)'; g.shadowBlur=10; g.strokeStyle='rgba(6,3,4,.72)'; g.lineWidth=5;   // nước mắt đen chảy xuống
+  [-1,1].forEach(s=>{let x=w*(.5+s*.21),y=h*.45;g.beginPath();g.moveTo(x,y);for(let k=0;k<12;k++){x+=s*(R()*5-3);y+=h*.022;g.lineTo(x,y);}g.stroke();});
+  g.restore();
+  const tg=g.createLinearGradient(0,0,0,h*.17); tg.addColorStop(0,'rgba(4,3,3,.97)'); tg.addColorStop(1,'rgba(4,3,3,0)');
+  g.fillStyle=tg; g.fillRect(0,0,w,h*.17);              // chân tóc
+  g.save(); g.translate(w/2,h/2); g.scale(w/2,h/2);     // viền tóc đen quanh mặt
+  const hg=g.createRadialGradient(0,0,0,0,0,1);
+  hg.addColorStop(0,'rgba(4,3,3,0)'); hg.addColorStop(.76,'rgba(4,3,3,0)'); hg.addColorStop(.92,'rgba(4,3,3,.92)'); hg.addColorStop(1,'rgb(4,3,3)');
+  g.fillStyle=hg; g.fillRect(-1.3,-1.3,2.6,2.6); g.restore();
+  stains(g,w,h,14,.2); noiseFx(g,w,h,18);
+}
+const eyeTex=()=>T('geye',512,256,(g,w,h)=>{          // nhãn cầu: lòng trắng ngầu máu, đồng tử bé xíu
+  const R=mulberry(555);
+  g.fillStyle='#d9cfb8'; g.fillRect(0,0,w,h);
+  blots(g,w,h,40,[[200,170,120],[170,120,100]],10,40,R,.1,.25);
+  for(let i=0;i<60;i++){
+    const a=R()*6.28,rr=88+R()*30;let x=128+Math.cos(a)*rr,y=128+Math.sin(a)*rr;
+    g.strokeStyle='rgba('+((120+R()*50)|0)+',10,12,'+(.35+R()*.4)+')'; g.lineWidth=1+R()*1.6; g.beginPath(); g.moveTo(x,y);
+    for(let k=0;k<5;k++){x+=(128-x)*.16+(R()-.5)*8;y+=(128-y)*.16+(R()-.5)*8;g.lineTo(x,y);}
+    g.stroke();
+  }
+  const sh=g.createRadialGradient(128,128,40,128,128,120); sh.addColorStop(0,'rgba(80,20,20,0)'); sh.addColorStop(1,'rgba(70,16,16,.6)');
+  g.fillStyle=sh; g.fillRect(0,0,w,h);
+  const ir=g.createRadialGradient(128,128,4,128,128,30);
+  ir.addColorStop(0,'#101416'); ir.addColorStop(.45,'#6d787d'); ir.addColorStop(.85,'#a9b2b5'); ir.addColorStop(1,'#26302f');
+  g.fillStyle=ir; g.beginPath(); g.arc(128,128,30,0,7); g.fill();
+  g.fillStyle='#000'; g.beginPath(); g.arc(128,128,8,0,7); g.fill();
+  g.fillStyle='rgba(255,255,255,.9)'; g.beginPath(); g.arc(120,120,4,0,7); g.fill();
+});
+const skinTex=()=>T('gskin',256,256,(g,w,h)=>{          // da tay/cổ: xám xanh, gân tím, nứt
+  const R=mulberry(808);
+  g.fillStyle='#a2a69e'; g.fillRect(0,0,w,h);
+  blots(g,w,h,70,[[90,104,116],[128,104,120],[150,146,108],[70,80,84]],14,60,R,.1,.3);
+  g.strokeStyle='rgb(74,66,112)'; g.globalAlpha=.5;
+  for(let i=0;i<16;i++) veinsDraw(g,R()*w,R()*h,R()*6.28,50+R()*70,1+R()*1.4,R,0);
+  g.globalAlpha=1; g.strokeStyle='rgba(18,16,16,.5)'; g.lineWidth=1;
+  for(let i=0;i<24;i++){let x=R()*w,y=R()*h;g.beginPath();g.moveTo(x,y);for(let k=0;k<5;k++){x+=(R()-.5)*18;y+=3+R()*14;g.lineTo(x,y);}g.stroke();}
+  noiseFx(g,w,h,16);
+});
+const dressTex=()=>T('gdress',512,512,(g,w,h)=>{       // váy trắng ngà rách, ố vàng, mốc, nước bẩn và máu (đáy canvas = gấu váy)
+  const R=mulberry(4242);
+  g.fillStyle='#b7b3a2'; g.fillRect(0,0,w,h);
+  for(let y=0;y<h;y+=2){g.fillStyle='rgba(0,0,0,'+(.03+R()*.04)+')';g.fillRect(0,y,w,1);}
+  for(let x=0;x<w;x+=3){g.fillStyle='rgba(255,255,255,'+(.02+R()*.03)+')';g.fillRect(x,0,1,h);}
+  blots(g,w,h,90,[[90,86,60],[70,80,66],[120,110,80],[60,50,40]],20,90,R,.1,.3);
+  for(let i=0;i<46;i++){const x=R()*w,y0=R()*h*.7,len=60+R()*220,wd=2+R()*8,lg=g.createLinearGradient(0,y0,0,y0+len);
+    lg.addColorStop(0,'rgba(40,34,24,.55)'); lg.addColorStop(1,'rgba(40,34,24,0)'); g.fillStyle=lg; g.fillRect(x,y0,wd,len);}
+  blots(g,w,h,10,[[78,6,8]],20,70,R,.5,.8);
+  for(let i=0;i<26;i++){const x=w*.2+R()*w*.6,y0=h*(.1+R()*.2),len=60+R()*200,wd=2+R()*6,lg=g.createLinearGradient(0,y0,0,y0+len);
+    lg.addColorStop(0,'rgba(84,6,8,.85)'); lg.addColorStop(1,'rgba(84,6,8,0)'); g.fillStyle=lg; g.fillRect(x,y0,wd,len);}
+  const dg=g.createLinearGradient(0,h*.6,0,h); dg.addColorStop(0,'rgba(30,26,20,0)'); dg.addColorStop(1,'rgba(30,26,20,.75)');
+  g.fillStyle=dg; g.fillRect(0,h*.6,w,h*.4);
+  noiseFx(g,w,h,14);
+});
+const bumpTex=()=>T('gbump',256,256,(g,w,h)=>{          // bump vi mô: lỗ chân lông / thớ vải
+  g.fillStyle='#808080'; g.fillRect(0,0,w,h);
+  for(let i=0;i<1800;i++){g.fillStyle=Math.random()<.5?'rgba(255,255,255,.1)':'rgba(0,0,0,.1)';g.fillRect(Math.random()*w,Math.random()*h,1+Math.random()*4,1+Math.random()*4);}
+  noiseFx(g,w,h,60);
+});
 
 // ---------- Cơn bão bên ngoài cửa sổ (mưa, sét, sấm) ----------
 const haloTex=()=>T('halo',64,64,(g,w,h)=>{
@@ -894,39 +1022,183 @@ function pulseClues(){
   }
 }
 
-// ---------- Ma (thực thể) ----------
+// ---------- Ma (thực thể): oan hồn tóc dài, váy rách ướt, da xám tái, mắt đỏ ngầu nhìn theo bạn ----------
 const ghostRoot=new THREE.Group(); ghostRoot.rotation.order='YXZ'; ghostRoot.position.set(0,-80,0); scene.add(ghostRoot);
 const gBody=new THREE.Group(); ghostRoot.add(gBody);
-const gArms=[], gHair=[], gMats=[]; let gHeadG, gMouth, gLight;
+const gArms=[], gFingers=[], gMats=[], gEyes=[]; let gHeadG, gHeadC, gMouth, gLight, gHair, gRags, gDress;
+
+function headShape(x,y,z){            // điểm (x,y,z) trên mặt cầu đơn vị -> điểm trên khuôn mặt biến dạng của ma (mét)
+  let k=1;
+  if(z>0){
+    const G=(cx,cy,sx,sy)=>Math.exp(-(((x-cx)/sx)*((x-cx)/sx)+((y-cy)/sy)*((y-cy)/sy)));
+    k-=.30*(G(-.38,.18,.17,.14)+G(.38,.18,.17,.14));     // hốc mắt sâu hoắm
+    k-=.14*(G(-.55,-.22,.2,.22)+G(.55,-.22,.2,.22));     // má hóp
+    k+=.07*G(0,.30,.55,.07);                             // gò mày
+    k+=.10*G(0,-.02,.08,.2)*z;                           // sống mũi
+    k+=.05*G(0,-.14,.12,.06);                            // chóp mũi
+    k-=.04*G(0,-.45,.3,.05);                             // rãnh quanh miệng
+  }
+  if(y<0){ const q=-y; x*=1-.28*Math.pow(q,1.3); z*=1-.2*q; y*=1+.1*q; }   // hàm dài, cằm nhọn
+  return [x*.2,y*.31,z*.225*k];                  // lõm/gồ chỉ theo chiều sâu để mắt, má giữ đúng vị trí
+}
+
+function mkRibbons(strands,mat){      // dải ruy-băng mảnh (tóc, mảnh váy rách), có hàm cập nhật chuyển động mỗi khung hình
+  let nv=0; strands.forEach(s=>{nv+=s.p.length*2;});
+  const pos=new Float32Array(nv*3), uv=new Float32Array(nv*2), idx=[], meta=[];
+  let v=0;
+  strands.forEach(s=>{
+    const N=s.p.length, base=v;
+    for(let i=0;i<N;i++){
+      const a=s.p[Math.max(0,i-1)], b=s.p[Math.min(N-1,i+1)];
+      const tx=b[0]-a[0], ty=b[1]-a[1], tz=b[2]-a[2];
+      let sx=ty*s.n[2]-tz*s.n[1], sy=tz*s.n[0]-tx*s.n[2], sz=tx*s.n[1]-ty*s.n[0];
+      const sl=Math.hypot(sx,sy,sz)||1; sx/=sl; sy/=sl; sz/=sl;
+      const f=i/(N-1), ww=s.w*(1-(s.taper===undefined?.75:s.taper)*f*f)*.5;
+      for(let k=0;k<2;k++){
+        const sg=k?1:-1;
+        pos[v*3]=s.p[i][0]+sx*ww*sg; pos[v*3+1]=s.p[i][1]+sy*ww*sg; pos[v*3+2]=s.p[i][2]+sz*ww*sg;
+        uv[v*2]=(s.u0||0)+k*(s.du||1); uv[v*2+1]=(s.v0||0)+f*(s.dv||1);
+        v++;
+      }
+    }
+    for(let i=0;i<N-1;i++){const q=base+i*2; idx.push(q,q+1,q+2,q+1,q+3,q+2);}
+    meta.push({base:base,N:N,ph:Math.random()*6.28,f:.8+Math.random()*1.1,amp:.6+Math.random()*.7,nx:s.n[0],nz:s.n[2],len:s.len||1});
+  });
+  const geo=new THREE.BufferGeometry();
+  geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  geo.setAttribute('uv',new THREE.BufferAttribute(uv,2));
+  geo.setIndex(idx); geo.computeVertexNormals();
+  const rest=pos.slice(), mesh=new THREE.Mesh(geo,mat); mesh.frustumCulled=false;
+  function upd(t,sw,lift){
+    const P=geo.attributes.position.array;
+    for(let j=0;j<meta.length;j++){
+      const m=meta[j];
+      for(let i=0;i<m.N;i++){
+        const s=i/(m.N-1), a=sw*s*s*m.amp, q=m.ph+i*.45;
+        const dx=Math.sin(t*m.f+q)*a+m.nx*lift*s*s*.35, dz=Math.cos(t*m.f*.8+q)*a+m.nz*lift*s*s*.35, dy=lift*m.len*s*.55;
+        for(let k=0;k<2;k++){const o=(m.base+i*2+k)*3; P[o]=rest[o]+dx; P[o+1]=rest[o+1]+dy; P[o+2]=rest[o+2]+dz;}
+      }
+    }
+    geo.attributes.position.needsUpdate=true;
+  }
+  return {mesh:mesh,upd:upd};
+}
+
 (function(){
-  const skin=new THREE.MeshStandardMaterial({color:0xb4aea0,roughness:.7,emissive:0x2c2822});
-  const dk=new THREE.MeshStandardMaterial({color:0x060505,roughness:1,side:THREE.DoubleSide,emissive:0x060606});
-  const prof=[[0,.74],[.2,.68],[.7,.5],[1.2,.33],[1.5,.27],[1.78,.4],[2.0,.44],[2.12,.22],[2.24,.1]];
-  const lg=new THREE.LatheGeometry(prof.map(p=>new THREE.Vector2(p[1],p[0])),28), pa=lg.attributes.position;
-  for(let i=0;i<pa.count;i++){const y=pa.getY(i);if(y<.32){const a=Math.atan2(pa.getZ(i),pa.getX(i));
-    pa.setY(i,y+Math.abs(Math.sin(a*5)+Math.sin(a*11+1.3))*.3*(1-y/.32));}}
-  lg.computeVertexNormals(); gBody.add(new THREE.Mesh(lg,dk));
-  gHeadG=new THREE.Group(); gHeadG.position.set(0,2.4,0.05); gBody.add(gHeadG);
-  const hs=new THREE.Mesh(new THREE.SphereGeometry(1,28,24),skin); hs.scale.set(.27,.44,.25); gHeadG.add(hs);
-  const ft=faceTex();
-  const fm=new THREE.MeshStandardMaterial({map:ft,emissiveMap:ft,emissive:0xffffff,emissiveIntensity:.6,roughness:.8});
-  const fs=new THREE.Mesh(new THREE.SphereGeometry(1.012,28,24,Math.PI/2-.95,1.9,Math.PI*.12,Math.PI*.72),fm); fs.scale.set(.27,.44,.25); gHeadG.add(fs);
-  const gm=new THREE.MeshBasicMaterial({color:0xe8e8ff});
-  [-1,1].forEach(s=>{const e=new THREE.Mesh(new THREE.SphereGeometry(.024,8,6),gm);e.position.set(s*.1,.15,.232);gHeadG.add(e);});
-  gMouth=new THREE.Mesh(new THREE.CircleGeometry(.1,20),new THREE.MeshBasicMaterial({color:0x000000}));
-  gMouth.position.set(0,-.2,.23); gMouth.scale.set(1.1,.4,1); gHeadG.add(gMouth);
-  for(let i=0;i<20;i++){const a=.9+i/19*(Math.PI*2-1.8),len=1.2+Math.random()*.9;
-    const g2=new THREE.Group(); g2.position.set(Math.sin(a)*.2,.2,Math.cos(a)*.18-.02);
-    const m2=new THREE.Mesh(new THREE.BoxGeometry(.014,len,.014),dk); m2.position.y=-len/2; g2.add(m2);
-    g2.rotation.z=Math.sin(a)*.12; gHeadG.add(g2); gHair.push(g2);}
-  [-1,1].forEach(s=>{const sh=new THREE.Group(); sh.position.set(s*.42,2.02,.03); gBody.add(sh);
-    const up=new THREE.Mesh(new THREE.CylinderGeometry(.045,.035,.95,6),skin); up.position.y=-.475; sh.add(up);
-    const el=new THREE.Group(); el.position.y=-.95; sh.add(el);
-    const fo=new THREE.Mesh(new THREE.CylinderGeometry(.035,.028,.95,6),skin); fo.position.y=-.475; el.add(fo);
-    const hand=new THREE.Group(); hand.position.y=-.95; el.add(hand);
-    for(let k=0;k<5;k++){const f=new THREE.Group(); f.rotation.z=(k-2)*.26; hand.add(f);
-      const fm2=new THREE.Mesh(new THREE.CylinderGeometry(.012,.004,.36,5),skin); fm2.position.y=-.18; f.add(fm2);}
-    gArms.push({sh,el,s});});
+  const sm=x=>x*x*(3-2*x);
+  const skinT=skinTex(), skinM=new THREE.MeshStandardMaterial({map:skinT,emissiveMap:skinT,emissive:0xffffff,emissiveIntensity:.28,bumpMap:bumpTex(),bumpScale:1.2,roughness:.6});
+  const clawM=new THREE.MeshStandardMaterial({color:0x1b1410,roughness:.5,emissive:0x0a0806});
+
+  // ----- váy trắng rách, ướt, ố bẩn -----
+  const dtx=dressTex(), dressM=new THREE.MeshStandardMaterial({map:dtx,emissiveMap:dtx,emissive:0xffffff,emissiveIntensity:.2,bumpMap:bumpTex(),bumpScale:1.5,roughness:.8,side:THREE.DoubleSide});
+  const prof=[[.38,.62],[.6,.52],[.85,.38],[1.08,.25],[1.3,.18],[1.55,.205],[1.8,.255],[1.95,.3],[2.03,.2],[2.1,.1]];
+  const dg=new THREE.LatheGeometry(prof.map(p=>new THREE.Vector2(p[1],p[0])),64), dp=dg.attributes.position;
+  for(let i=0;i<dp.count;i++){
+    let x=dp.getX(i), y=dp.getY(i), z=dp.getZ(i);
+    const a=Math.atan2(z,x), low=Math.max(0,Math.min(1,(1.3-y)/.9));
+    const f=1+(.02+.07*low)*Math.sin(a*9+y*2.4)+.035*low*Math.sin(a*17-y*5);     // nếp gấp vải
+    x*=f; z*=f*(.62+.38*low);                                                      // thân trên dẹt, chân váy tròn
+    if(y<.5) y+=Math.max(0,Math.sin(a*8+.7)*Math.sin(a*3.1+2))*.26*(1-(y-.38)/.12); // gấu váy rách lởm chởm
+    dp.setXYZ(i,x,y,z);
+  }
+  dg.computeVertexNormals();
+  gDress=new THREE.Mesh(dg,dressM); gBody.add(gDress);
+  const rg=[];
+  for(let i=0;i<54;i++){                           // mảnh vải rách rủ xuống từ gấu váy
+    const a=i/54*Math.PI*2+Math.random()*.1, L=.22+Math.random()*.34, N=7, r=.62+Math.random()*.04, sx=Math.sin(a), cz=Math.cos(a), p=[];
+    for(let k=0;k<=N;k++){const s=k/N, rr=r+s*.06; p.push([sx*rr,.5-L*s,cz*rr]);}
+    rg.push({p:p,w:.07+Math.random()*.08,n:[sx,0,cz],taper:.9,u0:Math.random()*.8,du:.1,v0:0,dv:.12,len:L});
+  }
+  gRags=mkRibbons(rg,dressM); gBody.add(gRags.mesh);
+
+  // ----- cổ dài gầy guộc + gân -----
+  const neck=new THREE.Mesh(new THREE.CylinderGeometry(.045,.058,.34,10,3),skinM); neck.position.set(0,2.18,.01); neck.rotation.z=.08; gBody.add(neck);
+  [-1,1].forEach(s=>{const c=new THREE.Mesh(new THREE.CylinderGeometry(.008,.01,.3,5),skinM); c.position.set(s*.03,2.17,.045); c.rotation.z=-s*.08; gBody.add(c);});
+
+  // ----- đầu: hộp sọ biến dạng, hốc mắt sâu, má hóp, cằm nhọn -----
+  gHeadG=new THREE.Group(); gHeadG.position.set(0,2.3,0); gBody.add(gHeadG);      // trục xoay ở đỉnh cổ
+  gHeadC=new THREE.Group(); gHeadC.position.set(0,.24,.04); gHeadG.add(gHeadC);
+  const hg=new THREE.SphereGeometry(1,64,48), hp=hg.attributes.position, huv=hg.attributes.uv;
+  for(let i=0;i<hp.count;i++){
+    const x=hp.getX(i), y=hp.getY(i), z=hp.getZ(i), q=headShape(x,y,z);
+    hp.setXYZ(i,q[0],q[1],q[2]);
+    huv.setXY(i,z>=0?.5+x*.5:(x>=0?.985:.015),.5+y*.5);        // chiếu phẳng mặt trước; sau đầu lấy vùng tóc đen ở mép texture
+  }
+  hg.computeVertexNormals();
+  const ft=T('face3d',832,1280,(g,w,h)=>drawFace(g,w,h,false));
+  const fm=new THREE.MeshStandardMaterial({map:ft,emissiveMap:ft,emissive:0xffffff,emissiveIntensity:.42,bumpMap:bumpTex(),bumpScale:2,roughness:.55});
+  const headMesh=new THREE.Mesh(hg,fm); headMesh.renderOrder=1; gHeadC.add(headMesh);
+  mkCan('face',832,1280,(g,w,h)=>drawFace(g,w,h,true));         // bản mặt hù dọa toàn màn hình (drawScare dùng CAN.face)
+
+  // ----- hai nhãn cầu trong hốc mắt (luôn liếc nhìn người chơi) -----
+  const eyeT=eyeTex(), eyeM=new THREE.MeshStandardMaterial({map:eyeT,emissiveMap:eyeT,emissive:0xffffff,emissiveIntensity:.55,roughness:.22});
+  const ep=headShape(.38,.18,Math.sqrt(1-.38*.38-.18*.18));
+  [-1,1].forEach(s=>{const e=new THREE.Mesh(new THREE.SphereGeometry(.034,24,18),eyeM); e.position.set(s*ep[0],ep[1],ep[2]-.004); e.renderOrder=2; gHeadC.add(e); gEyes.push(e);});
+
+  // ----- miệng: tấm phủ cong theo mặt, co giãn để há/ngậm -----
+  const mt=T('gmouth',512,320,(g,w,h)=>{g.clearRect(0,0,w,h); drawMouth(g,256,150,226,118,mulberry(31337));});
+  const mm=new THREE.MeshStandardMaterial({map:mt,emissiveMap:mt,emissive:0xffffff,emissiveIntensity:.3,roughness:.5,alphaTest:.35,side:THREE.DoubleSide});
+  const my=headShape(0,-.45,Math.sqrt(1-.2025))[1];
+  const mg=new THREE.PlaneGeometry(.27,.17,20,10), mp=mg.attributes.position;
+  for(let i=0;i<mp.count;i++){
+    const X=mp.getX(i)/(.2*.9), Y=(mp.getY(i)+my)/(.31*1.04), Z=Math.sqrt(Math.max(.04,1-X*X-Y*Y));
+    mp.setZ(i,headShape(X,Y,Z)[2]+.006);
+  }
+  gMouth=new THREE.Mesh(mg,mm); gMouth.position.set(0,my,0); gMouth.renderOrder=3; gHeadC.add(gMouth);
+
+  // ----- tóc đen dài: một phần rủ che mặt, chừa khe để lộ một bên mắt -----
+  const hairM=new THREE.MeshStandardMaterial({color:0x0b0a09,roughness:.42,metalness:.15,emissive:0x040404,side:THREE.DoubleSide});
+  const hs=[];
+  for(let i=0;i<120;i++){                          // tóc sau + hai bên, xõa xuống vai và lưng
+    const ph=.85+Math.random()*(Math.PI*2-1.7), yu=.05+Math.random()*.85, hr=Math.sqrt(1-yu*yu);
+    const ux=Math.sin(ph)*hr, uz=Math.cos(ph)*hr, rp=headShape(ux,yu,uz);
+    const L=.9+Math.random()*1.0, N=14, rEnd=.16+Math.random()*.2, r0=Math.hypot(rp[0],rp[2])*1.03, p=[];
+    for(let k=0;k<=N;k++){
+      const s=k/N, a=ph+Math.sin(s*3.2+i)*.12, rr=r0+(rEnd-r0)*sm(Math.min(1,s*3.2))+Math.sin(s*9+i*1.7)*.012*s;
+      p.push([Math.sin(a)*rr,rp[1]-L*s,Math.cos(a)*rr-.02]);
+    }
+    hs.push({p:p,w:.014+Math.random()*.022,n:[ux,0,uz],len:L});
+  }
+  for(let i=0;i<64;i++){                           // mái tóc rủ trước mặt (khe hở ở bên phải)
+    const left=Math.random()<.62, ph=(Math.random()-.5)*1.3, yu=.62+Math.random()*.22, hr=Math.sqrt(1-yu*yu);
+    const ux=Math.sin(ph)*hr, uz=Math.cos(ph)*hr, rp=headShape(ux,yu,uz);
+    const L=.45+Math.random()*.55, N=12, tx=left?(-.16+Math.random()*.17):(.115+Math.random()*.07), p=[];
+    for(let k=0;k<=N;k++){
+      const s=k/N, e=sm(Math.min(1,s*1.4)), x=rp[0]+(tx-rp[0])*e+Math.sin(s*7+i)*.006*s, y=rp[1]-L*s;
+      const xu=x/.2, yv=Math.max(-.98,Math.min(.98,y/.31)), zu=Math.sqrt(Math.max(0,1-xu*xu-yv*yv));
+      const zs=(Math.abs(xu)<.98)?headShape(xu,yv,zu)[2]:.05;
+      p.push([x,y,Math.max(zs,.05)+.014+s*.05]);
+    }
+    hs.push({p:p,w:.012+Math.random()*.02,n:[0,0,1],len:L});
+  }
+  gHair=mkRibbons(hs,hairM); gHair.mesh.renderOrder=4; gHeadC.add(gHair.mesh);
+
+  // ----- tay dài ngoằng, ngón tay khô như móng vuốt -----
+  const mkSeg=(len,r0,r1)=>{const m=new THREE.Mesh(new THREE.CylinderGeometry(r0,r1,len,10,2),skinM); m.position.y=-len/2; return m;};
+  [-1,1].forEach(s=>{
+    const sh=new THREE.Group(); sh.position.set(s*.31,s<0?1.99:1.93,0); gBody.add(sh);
+    sh.add(new THREE.Mesh(new THREE.SphereGeometry(.05,10,8),skinM));
+    sh.add(mkSeg(1.0,.042,.031));
+    const el=new THREE.Group(); el.position.y=-1.0; sh.add(el);
+    el.add(new THREE.Mesh(new THREE.SphereGeometry(.036,10,8),skinM));
+    el.add(mkSeg(1.05,.03,.021));
+    const hand=new THREE.Group(); hand.position.y=-1.05; el.add(hand);
+    const palm=new THREE.Mesh(new THREE.SphereGeometry(1,10,8),skinM); palm.scale.set(.04,.075,.016); palm.position.y=-.05; hand.add(palm);
+    const fl=[.7,1,1.12,1.04,.88];
+    for(let k=0;k<5;k++){
+      const L=fl[k], l1=.12*L, l2=.085*L, l3=.062*L;
+      const f1=new THREE.Group(); f1.position.set((k-2)*.017*s*(k===0?1.6:1),k===0?-.03:-.1,0); f1.rotation.z=(k-2)*.16*s; hand.add(f1);
+      const s1=new THREE.Mesh(new THREE.CylinderGeometry(.0105,.009,l1,6,1),skinM); s1.position.y=-l1/2; f1.add(s1);
+      const f2=new THREE.Group(); f2.position.y=-l1; f1.add(f2);
+      const s2=new THREE.Mesh(new THREE.CylinderGeometry(.009,.0078,l2,6,1),skinM); s2.position.y=-l2/2; f2.add(s2);
+      const f3=new THREE.Group(); f3.position.y=-l2; f2.add(f3);
+      const s3=new THREE.Mesh(new THREE.CylinderGeometry(.0078,.005,l3,6,1),skinM); s3.position.y=-l3/2; f3.add(s3);
+      const claw=new THREE.Mesh(new THREE.ConeGeometry(.006,.045,5),clawM); claw.position.y=-l3-.018; claw.rotation.x=Math.PI; f3.add(claw);
+      gFingers.push({f1:f1,f2:f2,f3:f3,ph:Math.random()*6.28});
+    }
+    gArms.push({sh:sh,el:el,hand:hand,s:s});
+  });
+
   gLight=new THREE.PointLight(0xcfd8ff,0,11); gLight.position.set(0,2.2,.9); gBody.add(gLight);
   const seen=new Set();
   ghostRoot.traverse(o=>{if(o.material&&!seen.has(o.material)){seen.add(o.material);o.material.transparent=true;o.material.opacity=0;gMats.push(o.material);}});
@@ -1916,38 +2188,76 @@ function updGhost(dt){
     if(gh.t<=0){parkGhost(); ghostTimer=45+Math.random()*35; banner('Ma đã đi rồi... Bạn có thể ra ngoài.',2800);}
   }
 }
+let gGlT=2, gGl=0, gLift=0, gOpen=0;
 function animGhost(dt){
-  const act2=gh.phase!=='idle';
-  if(!act2){return;}
-  const t=tt;
-  const hunting=(gh.phase==='hunt'||gh.phase==='scare');
-  gMats.forEach(m=>m.opacity=gh.alpha);
-  gLight.intensity=gh.alpha*2.4*(0.6+0.4*Math.random());
+  if(gh.phase==='idle') return;
+  const t=tt, hunting=(gh.phase==='hunt'||gh.phase==='scare'), reveal=gh.phase==='reveal', peek=(gh.phase==='search'||gh.phase==='leave');
+  // chớp giật (glitch) ngẫu nhiên: ma rung, mờ rồi hiện lại
+  gGlT-=dt; if(gGlT<=0){gGlT=hunting?.25+Math.random()*.9:.8+Math.random()*2.4; gGl=.05+Math.random()*.09;}
+  const gl=gGl>0; if(gl) gGl-=dt;
+  const op=gh.alpha*(gl&&Math.random()<.5?.5:1), tr=op<.995;
+  gMats.forEach(m=>{m.opacity=op; m.transparent=tr;});
+  gLight.intensity=gh.alpha*2.4*(.6+.4*Math.random());
+  const ts=hunting?Math.floor(t*14)/14:t;                 // lúc đuổi: chuyển động giật cục kiểu stop-motion
+  const lunge=reveal&&gh.t0-gh.t>1.4, scr=gh.phase==='scare'||lunge;
   if(gh.phase!=='scare'){
     const sp=curSpot;
-    const sink=(gh.phase==='search'||gh.phase==='leave')&&sp?sp.sink*gh.peek:0;
-    const bend=(gh.phase==='search'||gh.phase==='leave')&&sp?sp.bend*gh.peek:(gh.phase==='reveal'?.65*Math.max(0,gh.t/gh.t0):0);
-    ghostRoot.position.set(gh.x,-sink+Math.sin(t*2)*.04,gh.z);
+    const sink=peek&&sp?sp.sink*gh.peek:0;
+    const bend=peek&&sp?sp.bend*gh.peek:(reveal?.65*Math.max(0,gh.t/gh.t0):0);
+    ghostRoot.position.set(gh.x+(gl?(Math.random()-.5)*.16:0),-sink+Math.sin(t*1.7)*.06,gh.z+(gl?(Math.random()-.5)*.16:0));
     let da=gh.face-ghostRoot.rotation.y; da=Math.atan2(Math.sin(da),Math.cos(da));
     ghostRoot.rotation.y+=da*Math.min(1,dt*8);
     ghostRoot.rotation.x=bend;
   }
-  const tgt=hunting?-1.35:(gh.phase==='reveal'?-.8:-.2);
-  gArms.forEach((a,i)=>{a.sh.rotation.x+=((tgt+Math.sin(t*3+i)*.1)-a.sh.rotation.x)*Math.min(1,dt*6);a.el.rotation.x=-.25+Math.sin(t*5+i*2)*.08;});
-  gHeadG.rotation.set(Math.sin(t*2.1)*.12,Math.sin(t*1.3)*.2,Math.sin(t*7)*.07+(Math.random()<dt*3?(Math.random()-.5)*.8:0));
-  const lunge=gh.phase==='reveal'&&gh.t0-gh.t>3.3;
-  if(gh.phase==='scare'||lunge){gHeadG.rotation.z+=(Math.random()-.5)*.5;gHeadG.rotation.y+=(Math.random()-.5)*.4;}
-  gHair.forEach((h,i)=>{h.rotation.x=Math.sin(t*2+i)*.12;});
-  gMouth.scale.y=(gh.phase==='scare'||lunge)?1.1+Math.abs(Math.sin(t*40))*.5:.35+Math.sin(t*3)*.1+(gh.phase==='search'?gh.peek*.5:0);
+  // thân: thở, đung đưa, chồm tới khi đuổi
+  const br=Math.sin(t*2.3);
+  gBody.rotation.z=Math.sin(t*1.1)*.035+(gl?(Math.random()-.5)*.1:0);
+  gBody.rotation.x=.05+br*.012+(hunting?.12:0);
+  gDress.scale.set(1+br*.012,1,1+br*.012);
+  // đầu: nghiêng vẹo như gãy cổ, giật khi hù
+  gHeadG.rotation.set(.14+Math.sin(ts*2.1)*.05+(scr?.25:0),Math.sin(ts*1.3)*.22+(scr?(Math.random()-.5)*.4:0),.3+Math.sin(ts*.9)*.1+(scr?(Math.random()-.5)*.5:0)+(gl?(Math.random()-.5)*.7:0));
+  gEyes.forEach(e=>e.lookAt(camera.position));            // mắt luôn dõi theo người chơi
+  // miệng há/ngậm
+  const openT=scr?1.05+Math.abs(Math.sin(t*38))*.3:(hunting?.5+Math.sin(ts*5)*.12:(peek?.2+gh.peek*.6:.14+Math.sin(t*2.5)*.05));
+  gOpen+=(openT-gOpen)*Math.min(1,dt*(scr?30:8));
+  gMouth.scale.set(1,Math.max(.05,gOpen),1);
+  // tay vươn tới
+  const tgt=hunting?-1.4:(reveal?-.85:-.18);
+  gArms.forEach((a,i)=>{
+    a.sh.rotation.x+=((tgt+Math.sin(ts*3+i)*.08)-a.sh.rotation.x)*Math.min(1,dt*6);
+    a.sh.rotation.z=a.s*(.08+(hunting?.18:0)+Math.sin(ts*2+i)*.03);
+    a.el.rotation.x=-.2-(hunting?.35:0)+Math.sin(ts*5+i*2)*.08;
+    a.hand.rotation.x=Math.sin(ts*7+i)*.15-(hunting?.2:0);
+  });
+  // ngón tay co giật như móng vuốt
+  const cb=gh.phase==='scare'?.55:(hunting?.2:.36);
+  gFingers.forEach(f=>{
+    const w=Math.sin(ts*9+f.ph)*.12+(gl?(Math.random()-.5)*.5:0);
+    f.f1.rotation.x=cb+w; f.f2.rotation.x=cb*1.5+w*.8; f.f3.rotation.x=cb*1.2+w*.6;
+  });
+  // tóc và mảnh váy bay: lúc đuổi tóc bay dựng lên như trôi trong nước
+  gLift+=(((hunting||lunge)?1:(reveal?.35:0))-gLift)*Math.min(1,dt*2.5);
+  gHair.upd(t,.05+(hunting?.04:0)+(gl?.05:0),gLift);
+  gRags.upd(t,.05,gLift*.3);
 }
 const sc=$('scare'), scx=sc.getContext('2d');
 function drawScare(t){
   const w=sc.width,h=sc.height; scx.clearRect(0,0,w,h);
-  if(t<.12||t>2.2||(!RF&&Math.random()<.18)||!CAN.face) return;
-  const k=1+Math.min(t,.6)*.9+Math.sin(t*50)*.04, fh=h*1.35*k, fw=fh*512/640;
-  scx.fillStyle='rgba(0,0,0,.55)'; scx.fillRect(0,0,w,h);
-  scx.save(); scx.translate(w/2+(Math.random()-.5)*w*.04,h*.52+(Math.random()-.5)*h*.04); scx.rotate((Math.random()-.5)*.08);
-  scx.drawImage(CAN.face,-fw/2,-fh/2,fw,fh); scx.restore();
+  const F=CAN.face;
+  if(t<.12||t>2.2||(!RF&&Math.random()<.18)||!F) return;
+  const k=1+Math.min(t,.6)*.9+Math.sin(t*50)*.04, fh=h*1.3*k, fw=fh*F.width/F.height;
+  scx.fillStyle='rgba(0,0,0,.6)'; scx.fillRect(0,0,w,h);
+  scx.save(); scx.translate(w/2+(Math.random()-.5)*w*.04,h*.5+(Math.random()-.5)*h*.04);
+  scx.rotate((Math.random()-.5)*.08+(Math.random()<.2?(Math.random()-.5)*.25:0));
+  scx.drawImage(F,-fw/2,-fh/2,fw,fh);
+  scx.strokeStyle='rgba(3,2,2,.92)'; scx.lineCap='round';          // tóc đen bay tán loạn quanh mặt
+  for(let i=0;i<28;i++){
+    const x0=(Math.random()*2-1)*fw*.6, y0=-fh*.56, x1=x0*.7+(Math.random()-.5)*fw*.5, y1=fh*(.05+Math.random()*.45);
+    scx.lineWidth=2+Math.random()*4; scx.beginPath(); scx.moveTo(x0,y0); scx.quadraticCurveTo((x0+x1)/2+(Math.random()-.5)*fw*.3,(y0+y1)/2,x1,y1); scx.stroke();
+  }
+  scx.restore();
+  const vg=scx.createRadialGradient(w/2,h/2,h*.25,w/2,h/2,h*.9); vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(0,0,0,.65)');
+  scx.fillStyle=vg; scx.fillRect(0,0,w,h);
   scx.fillStyle='rgba(140,150,175,'+(.08+Math.random()*.16)+')'; scx.fillRect(0,0,w,h);
   scx.fillStyle='rgba(0,0,0,.25)'; for(let y=0;y<h;y+=4) scx.fillRect(0,y,w,1);
 }
