@@ -651,6 +651,7 @@ scene.fog=new THREE.FogExp2(0x050202,0.045);
 const camera=new THREE.PerspectiveCamera(72,16/9,0.1,70);
 camera.rotation.order='YXZ';
 scene.add(camera);
+const cineCam=new THREE.PerspectiveCamera(60,16/9,0.1,70);   // camera điện ảnh: quay cận cảnh con ma trong cảnh trồi lên
 // Khung 16:9 luôn nằm gọn trong màn hình (letterbox), giao diện scale theo khung
 const stage=$('stage'), ui=$('ui');
 function fit(){
@@ -2176,6 +2177,18 @@ function spawnSpot(){
   }
   return null;
 }
+// Camera điện ảnh: cảnh 1 (0-2,9s) góc thấp sát đất nhìn ma trồi lên; cảnh 2 (2,9-4,1s) cận mặt; cảnh 3 (4,1-5,4s) đặc tả khuôn mặt lúc gào. Hết cảnh -> cắt về góc nhìn người chơi.
+function cineUpdate(){
+  const e=Math.max(0,gh.t0-gh.t), gx=gh.x, gz=gh.z, az0=gh.cineAz||0;
+  let shot=e<2.9?0:(e<4.1?1:2), az, dist, cy, ty, fov, roll=0, sh=.004;
+  if(shot===0){ const k=e/2.9; az=az0+.3-.1*k; dist=3.4-.9*k; cy=.35+.45*k; ty=Math.max(.15,2.5-(gh.sink||0)); fov=62-8*k; }
+  else if(shot===1){ const k=(e-2.9)/1.2; az=az0-.22+.05*k; dist=2.25-.35*k; cy=2.4; ty=2.55; fov=46; sh=.006; }
+  else { const k=(e-4.1)/1.3; az=az0+.12; dist=1.2-.22*k; cy=2.5; ty=2.58; fov=40-4*k; roll=Math.sin(e*29)*.035+.05; sh=.02; }
+  cineCam.position.set(gx+Math.sin(az)*dist+(Math.random()-.5)*sh, cy+(Math.random()-.5)*sh, gz+Math.cos(az)*dist+(Math.random()-.5)*sh);
+  cineCam.lookAt(gx,ty,gz); cineCam.rotateZ(roll);
+  if(Math.abs(cineCam.fov-fov)>.01){ cineCam.fov=fov; cineCam.updateProjectionMatrix(); }
+  if(gh.shotPrev!==shot){ gh.shotPrev=shot; if(shot>0){ tone(60,.4,'sine',.3,35); noise(.12,.2); } }   // tiếng "bụp" mỗi lần cắt cảnh
+}
 function ghostSpawn(){
   // CẢNH PHIM NGẮN: camera tự quay về phía trước, sàn nứt, ma trồi lên từ dưới đất (đầu cúi, tay buông) rồi ngẩng phắt lên -> mới bắt đầu đuổi
   let best=spawnSpot();
@@ -2187,7 +2200,14 @@ function ghostSpawn(){
   }
   gh.x=best[0]; gh.z=best[1]; gh.px=gh.x; gh.pz=gh.z; gh.phase='reveal'; gh.t0=gh.t=5.4; gh.step=0; gh.alpha=0; gh.shr=false; gh.sinkMax=2.75; gh.sink=gh.sinkMax; gh.pool=0; gh.pe=0;
   gh.face=Math.atan2(camera.position.x-gh.x,camera.position.z-gh.z);
+  // chọn hướng đặt camera điện ảnh (ưu tiên phía người chơi) sao cho không nằm trong tường / đồ đạc
+  { const az0=Math.atan2(camera.position.x-gh.x,camera.position.z-gh.z); let pickA=az0;
+    const okc=(x,z)=>Math.abs(x)<RW/2-.7&&Math.abs(z)<RD/2-.7&&!hit(x,z)&&!shapeBlocks.some(b=>x>b[0]-.3&&x<b[1]+.3&&z>b[2]-.3&&z<b[3]+.3);
+    for(const o of [0,.5,-.5,1,-1,1.5,-1.5,2.2,-2.2,3.14]){ const an=az0+o; if(okc(gh.x+Math.sin(an)*3.6,gh.z+Math.cos(an)*3.6)){pickA=an;break;} }
+    gh.cineAz=pickA; gh.shotPrev=-1; }
+  if(hidden) $('hide').style.display='none';
   $('bars').className='on'; $('banner').style.opacity=0; $('prompt').style.display='none';
+  cineUpdate();
   noise(1.6,.22); tone(40,4.2,'sine',.35,26);                          // tiếng ầm ì dưới sàn
   if(ghostSound()) gh.shr=true;            // có file tiếng ma -> bỏ tiếng gào tổng hợp
 }
@@ -2217,12 +2237,14 @@ function updGhost(dt){
     gh.alpha=e<.5?Math.min(1,e/.5)*(Math.random()<.4?.4:1):(e<2?(Math.random()<.12?.5:1):1);
     const rk=Math.max(0,Math.min(1,e/3.8));
     gh.sink=Math.max(0,gh.sinkMax*(1-rk*rk*(3-2*rk))+(1-rk)*Math.sin(e*21)*.015);   // trồi lên chậm, hơi giật
-    gh.face=Math.atan2(camera.position.x-gh.x,camera.position.z-gh.z);
+    gh.face=Math.atan2(cineCam.position.x-gh.x,cineCam.position.z-gh.z);        // ma nhìn thẳng vào ống kính
     if(Math.random()<dt*7) noise(.2,.08);                                           // sàn nứt rạn
     if(Math.random()<dt*2.5) tone(35+Math.random()*25,.5,'sine',.25,28);
     shake=Math.max(shake,e<3.8?.014+.016*rk:.08);
     if(e>4.0&&!gh.shr){gh.shr=true; tone(900,.9,'sawtooth',.14,260); tone(120,1,'square',.14,50); noise(.9,.3);}
     if(gh.t<=0){gh.phase='hunt'; gh.t=0; gh.step=0; gh.sink=0; $('bars').className='';
+      if(hidden) $('hide').style.display='block';
+      else{ yaw=Math.atan2(-(gh.x-camera.position.x),-(gh.z-camera.position.z)); pitch=-.03; }   // cắt về góc nhìn người chơi, đang nhìn về phía ma
       noise(1.2,.35); tone(60,1.4,'sawtooth',.22,200); whisper('chạy đi...');
       banner('NÓ ĐANG ĐUỔI THEO BẠN!\nTRỐN NGAY (tủ / gầm giường — E)',3200);}
     return;
@@ -2328,7 +2350,7 @@ function animGhost(dt){
   gHeadG.rotation.set(.14+.9*hdn+Math.sin(t*2.1)*.05+(scr?.25:0)-.015*wk*Math.cos(4*Math.PI*gPh),
     Math.sin(t*1.3)*.22+.05*cR*wk+(scr?(Math.random()-.5)*.4:0),
     .3+.25*hdn+Math.sin(t*.9)*.1+.025*sR*wk+(scr?(Math.random()-.5)*.5:0)+(gl?(Math.random()-.5)*.7:0));
-  gEyes.forEach(e=>e.lookAt(camera.position));
+  {const lc=reveal?cineCam:camera; gEyes.forEach(e=>e.lookAt(lc.position));}
   const openT=scr?1.05+Math.abs(Math.sin(t*38))*.3:(hunting?.5+Math.sin(t*5)*.12:(peek?.2+gh.peek*.6:.14+Math.sin(t*2.5)*.05));
   gOpen+=(openT-gOpen)*Math.min(1,dt*(scr?30:8));
   gMouth.scale.set(1,Math.max(.05,gOpen),1);
@@ -2717,14 +2739,7 @@ function update(dt){
     const eb=.94, f=v=>Math.abs(v)>eb?Math.sign(v)*(Math.abs(v)-eb)/(1-eb):0;
     yaw-=f(mouseX)*2.6*dt; pitch=Math.max(-1.3,Math.min(1.3,pitch-f(mouseY)*1.6*dt));
   }
-  if(gh.phase==='reveal'&&!hidden&&!modalOpen){          // camera tự quay về phía ma, nhìn xuống vết nứt rồi ngước lên theo thân ma
-    const dx=gh.x-camera.position.x, dz=gh.z-camera.position.z, dd=Math.hypot(dx,dz)||1;
-    let da=Math.atan2(-dx,-dz)-yaw; da=Math.atan2(Math.sin(da),Math.cos(da)); yaw+=da*Math.min(1,dt*3.2);
-    const hy=Math.min(2.3,Math.max(.1,2.45-(gh.sink||0)));
-    pitch+=(Math.atan2(hy-1.6,dd)-pitch)*Math.min(1,dt*2.4);
-  }
-  { const ft=gh.phase==='reveal'?60:72;                    // zoom nhẹ vào khi ma trồi lên, nhả ra khi bắt đầu đuổi
-    if(Math.abs(ft-camera.fov)>.01){ camera.fov+=(ft-camera.fov)*Math.min(1,dt*(ft<camera.fov?.8:4)); camera.updateProjectionMatrix(); } }
+  if(gh.phase==='reveal') cineUpdate();                  // cảnh phim: dùng camera riêng đặt sát con ma
   let moving=false;
   if(!modalOpen&&!hidden&&!transitioning&&!intro.on&&gh.phase!=='reveal'){
     let f=0,s=0;
@@ -2838,7 +2853,7 @@ function loop(now){
   update(dt);
   camera.rotation.set(pitch,yaw,Math.sin(tt*.7)*0.004);
   if(shake>0){camera.rotation.z+=(Math.random()-.5)*shake;camera.rotation.x+=(Math.random()-.5)*shake*.4;shake=Math.max(0,shake-dt*.6);}
-  renderer.render(scene,camera);
+  renderer.render(scene,(gh.phase==='reveal'&&state==='play')?cineCam:camera);
 }
 applyQuality(true);
 buildRoom(); camera.position.set(0,1.6,RD/2-2);
