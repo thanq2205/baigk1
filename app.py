@@ -2167,11 +2167,11 @@ function startGhost(){
   banner('ĐÈN CHỚP… CÓ THỨ GÌ ĐÓ ĐANG TỚI!\nTRỐN NGAY: tủ hoặc gầm giường (E)',4600);
   tone(90,1.6,'sawtooth',.12,45);
 }
-// Tìm chỗ trống ngay trước mặt người chơi (6-7 m) để cảnh ma trồi lên nằm gọn trong tầm nhìn
+// Tìm chỗ trống phía trước người chơi, càng xa càng tốt (ưu tiên 14 m, ít nhất 6,5 m) để cảnh ma trồi lên nằm gọn trong tầm nhìn
 function spawnSpot(){
   const cx=camera.position.x, cz=camera.position.z, ax=RW/2-1.6, az=RD/2-1.6;
   const ok=(x,z)=>Math.abs(x)<ax&&Math.abs(z)<az&&!hit(x,z)&&!shapeBlocks.some(b=>x>b[0]-1.4&&x<b[1]+1.4&&z>b[2]-1.4&&z<b[3]+1.4);
-  for(const d of [6.5,5.5,4.8,7.5,4]) for(const off of [0,.35,-.35,.7,-.7]){
+  for(const d of [14,12.5,11,9.5,8,6.5]) for(const off of [0,.3,-.3,.6,-.6,.9,-.9,1.2,-1.2]){
     const an=yaw+off, x=cx-Math.sin(an)*d, z=cz-Math.cos(an)*d; if(ok(x,z)) return [x,z];
   }
   return null;
